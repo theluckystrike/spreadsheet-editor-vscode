@@ -341,7 +341,7 @@
   // committed as before, and when focus comes back the same cell opens again so the next keys are added, not lost (EXEC6).
   let blurCommit = null;
   editor.addEventListener('blur', () => { if (!S.editing) return; const e = S.editing, v = editor.value, away = !document.hasFocus(); commitEdit(null); blurCommit = away ? { p: e.p, c: e.c, v, t: Date.now() } : null; });
-  window.addEventListener('focus', () => { const b = blurCommit; blurCommit = null; if (b && !S.editing && Date.now() - b.t < 1500 && S.sel && S.sel.r === b.p && S.sel.c === b.c) startEdit(b.v); });
+  window.addEventListener('focus', () => { const b = blurCommit; blurCommit = null; if (S.editing) { editor.focus(); return; } if (b && Date.now() - b.t < 1500 && S.sel && S.sel.r === b.p && S.sel.c === b.c) startEdit(b.v); });
 
   async function renameHeader(c) {
     if (!S.meta.header) { showNotice('Turn on "Header row" to give the columns names.', 'info'); return; }
@@ -463,6 +463,18 @@
   // ---------- keyboard ----------
   kbd.addEventListener('keydown', ev => {
     if (!S.meta) return;
+    // Keys that reach the grid while a cell editor is open (focus did not move yet) belong to that editor (EXEC6).
+    if (S.editing && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+      const k0 = ev.key;
+      if (k0 === 'Enter' || k0 === 'Tab') { ev.preventDefault(); commitEdit(k0 === 'Tab' ? (ev.shiftKey ? 'left' : 'right') : (ev.shiftKey ? 'up' : 'down')); return; }
+      if (k0 === 'Escape') { ev.preventDefault(); cancelEdit(); return; }
+      if (k0 === 'Backspace') { ev.preventDefault(); editor.value = editor.value.slice(0, -1); editor.focus(); return; }
+      if (k0.length === 1) { ev.preventDefault(); editor.value += k0; placeEditor(); editor.focus(); return; }
+    }
+    // A key that arrives after VS Code took focus for a moment (before the window focus event) continues the cell.
+    if (blurCommit && !S.editing && ev.key.length === 1 && !ev.ctrlKey && !ev.metaKey && !ev.altKey && S.sel && S.sel.r === blurCommit.p && S.sel.c === blurCommit.c && Date.now() - blurCommit.t < 1500) {
+      ev.preventDefault(); const v = blurCommit.v + ev.key; blurCommit = null; startEdit(v); return;
+    }
     const mod = ev.ctrlKey || ev.metaKey;
     const s = S.sel;
     const k = ev.key;
