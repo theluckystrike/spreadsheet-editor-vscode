@@ -1,0 +1,344 @@
+{
+  "name": "zovo-spreadsheet-editor",
+  "displayName": "Spreadsheet Editor for CSV, Excel & XLSX - Edit Large Files, SQL Filter",
+  "description": "Edit CSV, TSV and Excel (.xlsx) files as a spreadsheet. Free, no sign-in, works offline. Real undo and save, 1M-row CSV, untouched rows saved byte for byte, custom delimiter and encoding, find and replace with regex, SQL filter.",
+  "version": "0.1.0",
+  "publisher": "zovo",
+  "license": "MIT",
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#12302A",
+    "theme": "dark"
+  },
+  "engines": {
+    "vscode": "^1.90.0",
+    "node": ">=18"
+  },
+  "categories": [
+    "Data Science",
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "csv editor",
+    "edit csv",
+    "excel editor",
+    "xlsx editor",
+    "spreadsheet editor",
+    "spreadsheet",
+    "csv",
+    "tsv",
+    "xlsx",
+    "excel",
+    "table editor",
+    "large csv",
+    "csv table",
+    "find and replace",
+    "regex",
+    "sql filter",
+    "encoding",
+    "delimiter",
+    "utf-16",
+    "windows-1252"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": true
+  },
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "spreadsheetEditor.xlsx",
+        "displayName": "Spreadsheet Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.xlsx"
+          },
+          {
+            "filenamePattern": "*.xlsm"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "spreadsheetEditor.csv",
+        "displayName": "Spreadsheet Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.csv"
+          },
+          {
+            "filenamePattern": "*.tsv"
+          },
+          {
+            "filenamePattern": "*.tab"
+          },
+          {
+            "filenamePattern": "*.psv"
+          }
+        ],
+        "priority": "option"
+      }
+    ],
+    "commands": [
+      {
+        "command": "spreadsheetEditor.open",
+        "title": "Open in Spreadsheet Editor",
+        "category": "Spreadsheet Editor",
+        "icon": "$(table)"
+      },
+      {
+        "command": "spreadsheetEditor.openAsText",
+        "title": "Open as Text",
+        "category": "Spreadsheet Editor",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "spreadsheetEditor.find",
+        "title": "Find in Spreadsheet",
+        "category": "Spreadsheet Editor"
+      },
+      {
+        "command": "spreadsheetEditor.replace",
+        "title": "Replace in Spreadsheet",
+        "category": "Spreadsheet Editor"
+      },
+      {
+        "command": "spreadsheetEditor.replaceInFiles",
+        "title": "Find and Replace in CSV Files... (Pro)",
+        "category": "Spreadsheet Editor"
+      },
+      {
+        "command": "spreadsheetEditor.makeDefaultForCsv",
+        "title": "Make Spreadsheet Editor the Default for CSV and TSV",
+        "category": "Spreadsheet Editor"
+      },
+      {
+        "command": "spreadsheetEditor.removeDefaultForCsv",
+        "title": "Open CSV and TSV as Text Again",
+        "category": "Spreadsheet Editor"
+      },
+      {
+        "command": "spreadsheetEditor.openWalkthrough",
+        "title": "Get Started",
+        "category": "Spreadsheet Editor"
+      },
+      {
+        "command": "spreadsheetEditor.supportDeveloper",
+        "title": "Support the developer",
+        "category": "Spreadsheet Editor"
+      },
+      {
+        "command": "spreadsheetEditor.moreViewers",
+        "title": "More free viewers",
+        "category": "Spreadsheet Editor"
+      },
+      {
+        "command": "spreadsheetEditor.enterLicenseKey",
+        "title": "Zovo: Enter license key",
+        "category": "Spreadsheet Editor"
+      },
+      {
+        "command": "spreadsheetEditor.getPro",
+        "title": "Zovo: Get Pro",
+        "category": "Spreadsheet Editor"
+      },
+      {
+        "command": "spreadsheetEditor.unlockWithSponsors",
+        "title": "Zovo: Unlock Pro with GitHub Sponsors",
+        "category": "Spreadsheet Editor"
+      },
+      {
+        "command": "spreadsheetEditor.removeLicense",
+        "title": "Zovo: Remove license from this editor",
+        "category": "Spreadsheet Editor"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "spreadsheetEditor.find",
+        "key": "ctrl+f",
+        "mac": "cmd+f",
+        "when": "activeCustomEditorId =~ /^spreadsheetEditor\\./"
+      },
+      {
+        "command": "spreadsheetEditor.replace",
+        "key": "ctrl+h",
+        "mac": "cmd+alt+f",
+        "when": "activeCustomEditorId =~ /^spreadsheetEditor\\./"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "spreadsheetEditor.open",
+          "when": "resourceExtname =~ /^\\.(csv|tsv|tab|psv)$/ && activeEditor == workbench.editors.files.textFileEditor",
+          "group": "navigation"
+        },
+        {
+          "command": "spreadsheetEditor.openAsText",
+          "when": "activeCustomEditorId =~ /^spreadsheetEditor\\./",
+          "group": "navigation@40"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "spreadsheetEditor.open",
+          "when": "resourceExtname =~ /^\\.(csv|tsv|tab|psv|xlsx|xlsm)$/",
+          "group": "navigation@21"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "spreadsheetEditor.find",
+          "when": "activeCustomEditorId =~ /^spreadsheetEditor\\./"
+        },
+        {
+          "command": "spreadsheetEditor.replace",
+          "when": "activeCustomEditorId =~ /^spreadsheetEditor\\./"
+        },
+        {
+          "command": "spreadsheetEditor.openAsText",
+          "when": "activeCustomEditorId =~ /^spreadsheetEditor\\./"
+        },
+        {
+          "command": "spreadsheetEditor.enterLicenseKey",
+          "when": "spreadsheetEditor.proEnabled"
+        },
+        {
+          "command": "spreadsheetEditor.getPro",
+          "when": "spreadsheetEditor.proEnabled"
+        },
+        {
+          "command": "spreadsheetEditor.unlockWithSponsors",
+          "when": "spreadsheetEditor.proEnabled"
+        },
+        {
+          "command": "spreadsheetEditor.removeLicense",
+          "when": "spreadsheetEditor.proEnabled"
+        },
+        {
+          "command": "spreadsheetEditor.replaceInFiles",
+          "when": "spreadsheetEditor.proEnabled"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Spreadsheet Editor",
+      "properties": {
+        "spreadsheetEditor.maxEditSizeMB": {
+          "type": "number",
+          "default": 512,
+          "minimum": 1,
+          "description": "CSV and TSV files up to this size open for editing. Larger ones (up to spreadsheetEditor.maxFileSizeMB) open read-only."
+        },
+        "spreadsheetEditor.maxFileSizeMB": {
+          "type": "number",
+          "default": 1024,
+          "minimum": 1,
+          "description": "CSV and TSV files above this size are not opened here; open them as text instead."
+        },
+        "spreadsheetEditor.maxExcelSizeMB": {
+          "type": "number",
+          "default": 40,
+          "minimum": 1,
+          "description": "Excel workbooks (.xlsx, .xlsm) up to this size open for editing."
+        },
+        "spreadsheetEditor.maxExcelCells": {
+          "type": "number",
+          "default": 5000000,
+          "minimum": 10000,
+          "description": "Excel workbooks with more cells than this (all sheets together) are not opened, to protect memory."
+        },
+        "spreadsheetEditor.maxCopyRows": {
+          "type": "number",
+          "default": 200000,
+          "minimum": 1,
+          "description": "Copy at most this many rows to the clipboard at once."
+        },
+        "spreadsheetEditor.autoReload": {
+          "type": "boolean",
+          "default": true,
+          "description": "Read the file again when it changes on disk and you have no unsaved edits. With unsaved edits, nothing is reloaded: a note shows, and saving asks before it overwrites the newer file."
+        },
+        "spreadsheetEditor.askForRating": {
+          "type": "boolean",
+          "default": true,
+          "description": "Ask for a Marketplace rating after 2 files opened without an error, in 2 sessions at least 4 hours apart. \"Later\" asks one more time after 7 days, \"No thanks\" never asks again. Nothing is sent anywhere."
+        },
+        "spreadsheetEditor.showSupportLinks": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the small Rate, More free viewers and Sponsor links in the editor's status bar. Nothing is sent anywhere."
+        }
+      }
+    },
+    "walkthroughs": [
+      {
+        "id": "spreadsheetEditor.start",
+        "title": "Get started with Spreadsheet Editor",
+        "description": "Edit CSV and Excel files as a spreadsheet, with real undo and save.",
+        "steps": [
+          {
+            "id": "open",
+            "title": "Open a CSV or Excel file",
+            "description": ".xlsx files open in Spreadsheet Editor when you click them. For a CSV or TSV file, click the table icon in the editor title, or right-click it and pick \"Open in Spreadsheet Editor\".\n[Make it the default for CSV](command:spreadsheetEditor.makeDefaultForCsv)",
+            "media": {
+              "markdown": "walkthrough/open.md"
+            },
+            "completionEvents": [
+              "onCommand:spreadsheetEditor.open",
+              "onCommand:spreadsheetEditor.makeDefaultForCsv"
+            ]
+          },
+          {
+            "id": "edit",
+            "title": "Edit, paste and undo",
+            "description": "Type to change a cell, Enter to go down, Tab to go right. Paste a block from Excel or Google Sheets. Right-click for rows and columns. Ctrl+Z undoes, Ctrl+S saves; the tab shows a dot while there are unsaved edits.",
+            "media": {
+              "image": "images/screenshot.png",
+              "altText": "A CSV file open in Spreadsheet Editor with an edited cell highlighted."
+            }
+          },
+          {
+            "id": "find",
+            "title": "Find, replace and filter",
+            "description": "Ctrl+F opens find and replace, with match case, regex and whole-cell options. Type in the filter box, or a SQL condition such as price > 10 AND city LIKE 'Par%'.\n[Open settings](command:workbench.action.openSettings?%5B%22spreadsheetEditor%22%5D)",
+            "media": {
+              "markdown": "walkthrough/find.md"
+            },
+            "completionEvents": [
+              "onCommand:workbench.action.openSettings"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "scripts": {
+    "build": "node scripts/build.js --production",
+    "test": "node scripts/build.js --production && node --test \"test/*.test.js\"",
+    "package": "npm run build && npx -y @vscode/vsce package --no-dependencies -o dist/"
+  },
+  "devDependencies": {
+    "@types/vscode": "~1.90.0",
+    "exceljs": "4.4.0"
+  },
+  "homepage": "https://github.com/theluckystrike/spreadsheet-editor-vscode#readme",
+  "bugs": {
+    "url": "https://github.com/theluckystrike/spreadsheet-editor-vscode/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/theluckystrike/spreadsheet-editor-vscode"
+  },
+  "sponsor": {
+    "url": "https://github.com/sponsors/theluckystrike"
+  }
+}

@@ -1,0 +1,441 @@
+{
+ "vsix": "~/plugin-market-intel-work/run-20261107/wave14/out/DBUILD3-dist/zovo-spreadsheet-editor-0.1.0.vsix",
+ "sha256": "bd74c1f0dd4020aff67c0ebbd5af99096ea8a9cfc7f3468452234e98b5650691",
+ "vscode": "1.142.0",
+ "tag": "light",
+ "pass": 26,
+ "total": 26,
+ "results": [
+  {
+   "name": "open earthquakes_week.csv",
+   "pass": true,
+   "detail": {
+    "ms": 2985,
+    "left": "1,770 rows \u00b7 22 columns \u00b7 UTF-8 \u00b7 comma \u00b7 LF",
+    "notice": "",
+    "fatal": "",
+    "heads": [
+     "time",
+     "latitude",
+     "longitude",
+     "depth",
+     "mag"
+    ],
+    "row0": [
+     "2026-11-09T02:08:52.350Z",
+     "38.802165985107",
+     "-122.77916717529",
+     "1.5800000429153"
+    ],
+    "support": true
+   }
+  },
+  {
+   "name": "open country-codes.csv",
+   "pass": true,
+   "detail": {
+    "ms": 2392,
+    "left": "249 rows \u00b7 56 columns \u00b7 UTF-8 \u00b7 comma \u00b7 LF",
+    "notice": "",
+    "fatal": "",
+    "heads": [
+     "FIFA",
+     "Dial",
+     "ISO3166-1-Alpha-3",
+     "MARC",
+     "is_independent"
+    ],
+    "row0": [
+     "AFG",
+     "93",
+     "AFG",
+     "af"
+    ],
+    "support": true
+   }
+  },
+  {
+   "name": "open financial-sample.xlsx",
+   "pass": true,
+   "detail": {
+    "ms": 2291,
+    "left": "701 rows \u00b7 16 columns",
+    "notice": "",
+    "fatal": "",
+    "heads": [
+     "A",
+     "B",
+     "C",
+     "D",
+     "E"
+    ],
+    "row0": [
+     "Segment",
+     "Country",
+     "Product",
+     "Discount Band"
+    ],
+    "support": true
+   }
+  },
+  {
+   "name": "open budget-formats.xlsx",
+   "pass": true,
+   "detail": {
+    "ms": 2276,
+    "left": "7 rows \u00b7 5 columns",
+    "notice": "",
+    "fatal": "",
+    "heads": [
+     "A",
+     "B",
+     "C",
+     "D",
+     "E"
+    ],
+    "row0": [
+     "Team budget 2026",
+     "",
+     "",
+     ""
+    ],
+    "support": true
+   }
+  },
+  {
+   "name": "open clients-windows-1252.csv",
+   "pass": true,
+   "detail": {
+    "ms": 2300,
+    "left": "120 rows \u00b7 5 columns \u00b7 WINDOWS-1252 \u00b7 comma \u00b7 CRLF",
+    "notice": "",
+    "fatal": "",
+    "heads": [
+     "client",
+     "pays",
+     "ville",
+     "montant",
+     "devise"
+    ],
+    "row0": [
+     "Soci\u00e9t\u00e9 001 \u2013 Caf\u00e9",
+     "Afghanistan",
+     "S\u00e3o Paulo",
+     "8531.31"
+    ],
+    "support": true
+   }
+  },
+  {
+   "name": "open bestellungen-semicolon.csv",
+   "pass": true,
+   "detail": {
+    "ms": 2272,
+    "left": "200 rows \u00b7 5 columns \u00b7 UTF-8 \u00b7 semicolon \u00b7 CRLF",
+    "notice": "",
+    "fatal": "",
+    "heads": [
+     "Datum",
+     "Artikel",
+     "Menge",
+     "Preis",
+     "Bemerkung"
+    ],
+    "row0": [
+     "2026-01-01",
+     "Artikel 0",
+     "1",
+     "0,00"
+    ],
+    "support": true
+   }
+  },
+  {
+   "name": "open earthquakes.tsv",
+   "pass": true,
+   "detail": {
+    "ms": 2293,
+    "left": "300 rows \u00b7 8 columns \u00b7 UTF-8 \u00b7 tab \u00b7 LF",
+    "notice": "",
+    "fatal": "",
+    "heads": [
+     "time",
+     "latitude",
+     "longitude",
+     "depth",
+     "mag"
+    ],
+    "row0": [
+     "2026-11-09T02:08:52.350Z",
+     "38.802165985107",
+     "-122.77916717529",
+     "1.5800000429153"
+    ],
+    "support": true
+   }
+  },
+  {
+   "name": "open earthquakes-utf16.csv",
+   "pass": true,
+   "detail": {
+    "ms": 1985,
+    "left": "100 rows \u00b7 5 columns \u00b7 UTF-16LE BOM \u00b7 tab \u00b7 CRLF",
+    "notice": "",
+    "fatal": "",
+    "heads": [
+     "time",
+     "latitude",
+     "longitude",
+     "depth",
+     "place"
+    ],
+    "row0": [
+     "2026-11-09T02:08:52.350Z",
+     "38.802165985107",
+     "-122.77916717529",
+     "1.5800000429153"
+    ],
+    "support": true
+   }
+  },
+  {
+   "name": "open sensor-with-comments.csv",
+   "pass": true,
+   "detail": {
+    "ms": 1955,
+    "left": "6 rows \u00b7 3 columns \u00b7 UTF-8 \u00b7 comma \u00b7 LF",
+    "notice": "",
+    "fatal": "",
+    "heads": [
+     "# exported by logger v2.1",
+     "column 2",
+     "column 3"
+    ],
+    "row0": [
+     "# units: C",
+     " %RH",
+     ""
+    ],
+    "support": true
+   }
+  },
+  {
+   "name": "comment prefix # hides 3 comment lines, keeps them in the file",
+   "pass": true,
+   "detail": "3 rows \u00b7 3 columns \u00b7 UTF-8 \u00b7 comma \u00b7 LF \u00b7 3 comment lines kept"
+  },
+  {
+   "name": "open hostile-unterminated-quote.csv",
+   "pass": true,
+   "detail": {
+    "ms": 1954,
+    "left": "5 rows \u00b7 3 columns \u00b7 UTF-8 \u00b7 comma \u00b7 LF",
+    "notice": "Row 4 has a quote that is never closed. It is read up to its line end, as plain text.\u00d7",
+    "fatal": "",
+    "heads": [
+     "id",
+     "name",
+     "comment"
+    ],
+    "row0": [
+     "1",
+     "Ana",
+     "ok"
+    ],
+    "support": true
+   }
+  },
+  {
+   "name": "open hostile-mixed-eol-nul.csv",
+   "pass": true,
+   "detail": {
+    "ms": 1950,
+    "left": "4 rows \u00b7 3 columns \u00b7 UTF-8 \u00b7 comma \u00b7 CRLF (mixed)",
+    "notice": "",
+    "fatal": "",
+    "heads": [
+     "a",
+     "b",
+     "c"
+    ],
+    "row0": [
+     "1",
+     "2",
+     "3"
+    ],
+    "support": true
+   }
+  },
+  {
+   "name": "open hostile-1mb-cell.csv",
+   "pass": true,
+   "detail": {
+    "ms": 2302,
+    "left": "2 rows \u00b7 3 columns \u00b7 UTF-8 \u00b7 comma \u00b7 LF",
+    "notice": "",
+    "fatal": "",
+    "heads": [
+     "id",
+     "blob",
+     "tail"
+    ],
+    "row0": [
+     "1",
+     "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\u2026",
+     "end"
+    ],
+    "support": true
+   }
+  },
+  {
+   "name": "open hostile-zip-bomb.xlsx",
+   "pass": true,
+   "detail": {
+    "ms": 2268,
+    "left": "",
+    "notice": "",
+    "fatal": "This file cannot be edited hereThe part xl/worksheets/sheet2.xml unpacks to more than its directory says. It looks like a zip bomb and is not opened.Open as Tex",
+    "heads": [],
+    "row0": [],
+    "support": true
+   }
+  },
+  {
+   "name": "type into a cell: grid shows it, tab is dirty, file not written yet",
+   "pass": true,
+   "detail": {
+    "before": "1.01",
+    "after": "9.9",
+    "dirty": true
+   }
+  },
+  {
+   "name": "save: one line changed (the edited field only); all other bytes identical",
+   "pass": true,
+   "detail": {
+    "diffLines": 1,
+    "onlyMag": true,
+    "sizeDelta": -1
+   }
+  },
+  {
+   "name": "undo after save brings the old value back (tab dirty); redo returns to the saved state (tab clean)",
+   "pass": true,
+   "detail": {
+    "u1": "1.01",
+    "du": true,
+    "r1": "9.9",
+    "dr": false
+   }
+  },
+  {
+   "name": "close and reopen: the change is there",
+   "pass": true
+  },
+  {
+   "name": "xlsx save budget-formats.xlsx: value written, styles/merges/sheets kept (openpyxl)",
+   "pass": true,
+   "detail": {
+    "dialog": "Save a Copy...CancelSaveBefore the first save of budget-formats.xlsxKept: cell values, styles, number formats, merged cells, column widths and the other sheets.Formulas stay formulas. Their results ar",
+    "btns": [
+     "Save a Copy...",
+     "Cancel",
+     "Save"
+    ],
+    "res": {
+     "sheets": [
+      "Budget",
+      "Staff",
+      "Hidden notes"
+     ],
+     "orig_sheets": [
+      "Budget",
+      "Staff",
+      "Hidden notes"
+     ],
+     "B3": 3100,
+     "fmt": "#,##0.00 [$\u20ac-x-euro2]",
+     "D3": "=B3+C3",
+     "merged": [
+      "A1:E1"
+     ],
+     "fill": "00DDEBF7",
+     "bold": true,
+     "width": 18,
+     "hidden": "hidden",
+     "staff_b2": "2024-01-15 00:00:00",
+     "staff_fmt": "yyyy-mm-dd",
+     "ok": true
+    }
+   }
+  },
+  {
+   "name": "xlsx save financial-sample.xlsx: value written, styles/merges/sheets kept (openpyxl)",
+   "pass": true,
+   "detail": {
+    "dialog": "",
+    "btns": [],
+    "res": {
+     "sheets": [
+      "Sheet1"
+     ],
+     "orig_sheets": [
+      "Sheet1"
+     ],
+     "E2": 777,
+     "E3": 1321,
+     "oE3": 1321,
+     "rows": 701,
+     "orows": 701,
+     "fmtJ2": "_(\"$\"* #,##0.00_);_(\"$\"* (#,##0.00);_(\"$\"* \"-\"??_);_(@_)",
+     "ofmtJ2": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)",
+     "A1": "Segment",
+     "other_cells_changed": 0,
+     "fmt_same_after_escape_normalize": true,
+     "ok": true
+    }
+   }
+  },
+  {
+   "name": "light theme earthquakes_week.csv",
+   "pass": true,
+   "detail": {
+    "bg": "rgb(255, 255, 255)",
+    "left": "1,770 rows \u00b7 22 columns \u00b7 UTF-8 \u00b7 comma \u00b7 LF"
+   }
+  },
+  {
+   "name": "light theme budget-formats.xlsx",
+   "pass": true,
+   "detail": {
+    "bg": "rgb(255, 255, 255)",
+    "left": "7 rows \u00b7 5 columns"
+   }
+  },
+  {
+   "name": "no network from the extension: no webview requests, no extension-host sockets",
+   "pass": true,
+   "detail": {
+    "webviewRequests": [],
+    "socks": []
+   }
+  },
+  {
+   "name": "VS Code bridge note \"No custom document found\" after closing tabs (counted)",
+   "pass": true,
+   "detail": {
+    "count": 0
+   }
+  },
+  {
+   "name": "no errors from the extension in the consoles",
+   "pass": true,
+   "detail": []
+  },
+  {
+   "name": "no extension-host errors for this extension",
+   "pass": true,
+   "detail": []
+  }
+ ]
+}
