@@ -90,6 +90,8 @@ const AT_RISK = [
   [/^xl\/model\//i, 'the data model (Power Pivot)'],
   [/^xl\/ctrlProps\//i, 'form controls'],
   [/^xl\/queryTables\//i, 'query tables'],
+  [/^customXml\//i, 'custom XML parts'],
+  [/^docProps\/custom\.xml$/i, 'custom document properties (such as sensitivity labels)'],
 ];
 
 function atRisk(entries) {

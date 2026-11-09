@@ -154,6 +154,17 @@ test('a save writes a temp file and renames it: a failed save leaves the old fil
   assert.equal(fs.readdirSync(tmp).filter(f => f.endsWith('.zovo-tmp')).length, 0);
 });
 
+test('a read-only file (chmod 444) is not replaced by a save; the error says so and the file is unchanged', async () => {
+  const x = await openCsv('a\n1\n');
+  fs.chmodSync(x.file, 0o444);
+  const rows = await x.rows();
+  await x.s.handle({ type: 'edit', view: 1, edit: { kind: 'set', cells: [{ id: rows[0].id, col: 0, value: '2' }] } });
+  await assert.rejects(x.s.handle({ type: 'save', path: x.file }), /EACCES|permission/);
+  assert.equal(fs.readFileSync(x.file, 'utf8'), 'a\n1\n');
+  assert.equal(fs.statSync(x.file).mode & 0o777, 0o444);
+  fs.chmodSync(x.file, 0o644);
+});
+
 // ---------- Excel ----------
 
 async function makeWorkbook(file) {

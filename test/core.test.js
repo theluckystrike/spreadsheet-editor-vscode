@@ -188,3 +188,10 @@ test('zip guard refuses a workbook whose part inflates past its declared size', 
   assert.throws(() => checkZip(zip), /zip bomb/);
   assert.throws(() => checkZip(Buffer.from('not a zip at all, just text that is long enough')), /not a valid/);
 });
+
+test('the save note lists custom XML parts and custom document properties (they do not survive an Excel save)', () => {
+  const { atRisk } = require('../src/core/zipguard');
+  const names = ['[Content_Types].xml', 'xl/workbook.xml', 'customXml/item1.xml', 'docProps/custom.xml', 'docProps/app.xml'].map(name => ({ name }));
+  assert.deepEqual(atRisk(names), ['custom XML parts', 'custom document properties (such as sensitivity labels)']);
+  assert.deepEqual(atRisk([{ name: 'xl/workbook.xml' }, { name: 'docProps/core.xml' }]), []);
+});

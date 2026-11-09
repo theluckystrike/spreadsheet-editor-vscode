@@ -494,6 +494,7 @@ function createSession({ post, loadXlsx }) {
   function writeAtomic(target, chunksIter) {
     let real = target;
     try { real = fs.realpathSync(target); } catch { /* new file */ }
+    if (fs.existsSync(real)) fs.accessSync(real, fs.constants.W_OK); // a read-only file is never replaced (EACCES, nothing written) (EXEC6)
     const dir = path.dirname(real);
     const tmp = path.join(dir, `.${path.basename(real)}.${process.pid}.${Date.now()}.zovo-tmp`);
     let mode = null;

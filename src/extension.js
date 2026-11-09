@@ -348,6 +348,8 @@ class SpreadsheetEditorProvider {
 
   async saveCustomDocument(doc) {
     if (doc.readOnly) throw new Error(doc.readOnlyReason || 'This file is open read-only.');
+    // Nothing edited and the file on disk is the one we read: write nothing, so the file stays byte for byte (EXEC6).
+    if (!doc.dirty && !doc.conflict && doc.stamp && await vscode.workspace.fs.stat(doc.uri).then(st => st.size === doc.stamp.size && Math.abs(st.mtime - doc.stamp.mtimeMs) < 2, () => false)) return;
     const mode = await this.excelNote(doc, doc.uri);
     if (mode === 'copy') return this.saveCopy(doc);
     await this.checkConflict(doc);

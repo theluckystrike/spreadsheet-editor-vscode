@@ -10,3 +10,4 @@ dist/*.vsix
 *.vsix
 images/**
 !images/screenshot.png
+docs/**
