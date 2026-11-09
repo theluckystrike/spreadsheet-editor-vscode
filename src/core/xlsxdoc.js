@@ -5,7 +5,7 @@
 
 const ExcelJS = require('exceljs');
 const { Grid } = require('./grid');
-const { checkZip, atRisk } = require('./zipguard');
+const { checkZip, atRisk, namesAtRisk } = require('./zipguard');
 
 const NUM_RE = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
 const ISO_DATE_RE = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?)?Z?$/;
@@ -130,6 +130,7 @@ class XlsxDoc {
     this.ext = opts.ext || 'xlsx';
     const { wb, zip } = await loadWorkbook(buf);
     this.atRisk = atRisk(zip.entries);
+    try { this.atRisk.push(...namesAtRisk(buf, zip.entries)); } catch { /* unreadable workbook.xml: exceljs reports it */ }
     this.sheets = [];
     this.header = opts.header === true;
     const maxCells = opts.maxCells || 5000000;

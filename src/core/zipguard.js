@@ -100,4 +100,24 @@ function atRisk(entries) {
   return found;
 }
 
-module.exports = { checkZip, listEntries, atRisk, ZipError };
+// Defined names that the Excel save cannot keep as they are: named constants and formulas (dropped or cut down to
+// a plain reference) and sheet-level names (made workbook-level). Plain range names and print settings are kept.
+const REF_PART = /^(?:(?:'(?:[^']|'')+'|[^'!,()"=*+\-/^&<> ]+)!)?(?:\$?[A-Z]{1,3}\$?\d+(?::\$?[A-Z]{1,3}\$?\d+)?|\$?[A-Z]{1,3}:\$?[A-Z]{1,3}|\$?\d+:\$?\d+|#REF!)$/;
+function namesAtRisk(buf, entries) {
+  const en = entries.find(e => e.name === 'xl/workbook.xml');
+  if (!en) return [];
+  const start = en.local + 30 + buf.readUInt16LE(en.local + 26) + buf.readUInt16LE(en.local + 28);
+  const raw = buf.subarray(start, start + en.csize);
+  const xml = (en.method === 8 ? zlib.inflateRawSync(raw, { maxOutputLength: Math.max(1, en.usize) + 1 }) : raw).toString('utf8');
+  const unesc = t => t.replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  const out = [];
+  for (const m of xml.matchAll(/<definedName\b([^>]*)>([\s\S]*?)<\/definedName>/g)) {
+    const name = unesc((m[1].match(/\bname="([^"]*)"/) || [])[1] || '');
+    if (/^_xlnm\./i.test(name)) continue;
+    const ref = unesc(m[2]).trim().split(',').every(part => REF_PART.test(part.trim()));
+    if (!ref || /\blocalSheetId="/.test(m[1])) out.push(name);
+  }
+  return out.length ? [`named formulas, constants and sheet-level names (${out.slice(0, 5).join(', ')}${out.length > 5 ? ', ...' : ''})`] : [];
+}
+
+module.exports = { checkZip, listEntries, atRisk, namesAtRisk, ZipError };

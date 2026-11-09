@@ -195,3 +195,16 @@ test('the save note lists custom XML parts and custom document properties (they 
   assert.deepEqual(atRisk(names), ['custom XML parts', 'custom document properties (such as sensitivity labels)']);
   assert.deepEqual(atRisk([{ name: 'xl/workbook.xml' }, { name: 'docProps/core.xml' }]), []);
 });
+
+test('the save note lists named constants, named formulas and sheet-level names; plain range names and print areas are not listed', () => {
+  const { listEntries, namesAtRisk } = require('../src/core/zipguard');
+  const JSZip = require('jszip');
+  const wbXml = (names) => `<?xml version="1.0"?><workbook><sheets><sheet name="Data" sheetId="1" r:id="rId1"/></sheets><definedNames>${names}</definedNames></workbook>`;
+  const make = async (names) => { const z = new JSZip(); z.file('xl/workbook.xml', wbXml(names)); return z.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' }); };
+  return (async () => {
+    let b = await make('<definedName name="MyRange">Data!$A$1:$A$5</definedName><definedName name="Two">\'My Sheet\'!$A$1,Data!$C:$C</definedName><definedName name="_xlnm.Print_Area" localSheetId="0">Data!$A$1:$C$9</definedName>');
+    assert.deepEqual(namesAtRisk(b, listEntries(b)), []);
+    b = await make('<definedName name="TaxRate">0.2</definedName><definedName name="Double">Data!$A$1*2</definedName><definedName name="Local" localSheetId="0">Data!$B$1</definedName><definedName name="Ok">Data!$A$1</definedName>');
+    assert.deepEqual(namesAtRisk(b, listEntries(b)), ['named formulas, constants and sheet-level names (TaxRate, Double, Local)']);
+  })();
+});
