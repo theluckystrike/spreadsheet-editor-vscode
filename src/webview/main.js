@@ -337,7 +337,11 @@
     if (ev.key === 'Tab') { ev.preventDefault(); commitEdit(ev.shiftKey ? 'left' : 'right'); }
   });
   editor.addEventListener('input', placeEditor);
-  editor.addEventListener('blur', () => { if (S.editing) commitEdit(null); });
+  // VS Code can take focus from the webview for a moment while you type (window blur, then focus again). The cell is
+  // committed as before, and when focus comes back the same cell opens again so the next keys are added, not lost (EXEC6).
+  let blurCommit = null;
+  editor.addEventListener('blur', () => { if (!S.editing) return; const e = S.editing, v = editor.value, away = !document.hasFocus(); commitEdit(null); blurCommit = away ? { p: e.p, c: e.c, v, t: Date.now() } : null; });
+  window.addEventListener('focus', () => { const b = blurCommit; blurCommit = null; if (b && !S.editing && Date.now() - b.t < 1500 && S.sel && S.sel.r === b.p && S.sel.c === b.c) startEdit(b.v); });
 
   async function renameHeader(c) {
     if (!S.meta.header) { showNotice('Turn on "Header row" to give the columns names.', 'info'); return; }
