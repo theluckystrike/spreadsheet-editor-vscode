@@ -5,7 +5,7 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 let esbuild;
 try { esbuild = require('esbuild'); } catch { esbuild = require(path.join(root, '..', 'table-viewer-vscode', 'node_modules', 'esbuild')); }
-const prod = process.argv.includes('--production');
+const prod = process.argv.includes('--production') || process.argv.includes('production');
 const common = { bundle: true, minify: prod, sourcemap: !prod, legalComments: 'none', logLevel: 'warning', absWorkingDir: root };
 Promise.all([
   esbuild.build({ ...common, entryPoints: ['src/extension.js'], outfile: 'dist/extension.js', platform: 'node', format: 'cjs', target: 'node18', external: ['vscode'] }),

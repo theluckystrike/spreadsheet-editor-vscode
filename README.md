@@ -67,7 +67,7 @@ People who edit CSV files in VS Code report the same problems again and again. T
 
 - .xlsx and .xlsm files open in Spreadsheet Editor when you click them.
 - For .csv, .tsv, .tab and .psv files, click the table icon in the editor title or right-click the file and pick Open in Spreadsheet Editor. To open them here every time, run "Spreadsheet Editor: Make Spreadsheet Editor the Default for CSV and TSV". Open as Text in the editor title switches back for one file.
-- CSV files up to 512 MB open for editing and up to 1 GB read-only. Both limits are settings.
+- CSV files up to 512 MB open for editing and up to 1 GB read-only. Both limits are settings, and you can lower them. Zovo Pro raises them (below).
 
 ## Settings
 
@@ -82,26 +82,42 @@ People who edit CSV files in VS Code report the same problems again and again. T
 | `spreadsheetEditor.askForRating` | true | One rating question after a few good uses. Never after an error. |
 | `spreadsheetEditor.showSupportLinks` | true | The small Rate, More free viewers and Sponsor links in the status bar. |
 
+Without Zovo Pro, a size setting above its default works as the default.
+
 ## Privacy
 
-The extension makes no network calls. Files are read and written on your computer, and nothing about them is sent anywhere. There is no telemetry and no account. It needs VS Code 1.90 or later, so it also installs in Cursor, Windsurf and VSCodium.
+The extension makes no network calls on its own. Files are read and written on your computer, and nothing about them is sent anywhere. The one exception is Zovo Pro: when you click to unlock it with GitHub Sponsors, it asks GitHub once whether you are a sponsor. There is no telemetry and no account. It needs VS Code 1.90 or later, so it also installs in Cursor, Windsurf and VSCodium.
 
-## Free
+## Zovo Pro
 
-Everything in this version is free, with no limit on rows, edits or saves, and no ads. A Zovo Pro license for larger files may come later. It will never lock opening, viewing, editing or saving a file.
+Everything above is free, with no limit on rows, edits or saves, and no ads. Everything that is free stays free.
+
+Zovo Pro is USD 19 once. It turns on the Pro tools in all Zovo extensions. In this one there are three:
+
+- Find and Replace in CSV Files: replace text in every CSV and TSV file of the workspace at once, with match case, regex and whole cell. Rows that do not change stay byte for byte, and files with unsaved edits are skipped.
+- Edit files past the free size limits: CSV files over 512 MB open for editing (up to 2,000 MB), and workbooks over 40 MB open (up to 200 MB). Without Pro such a file opens read-only or not at all, as before, and the note has a button to open it with Pro.
+- Save filtered rows as a new file: the rows that the filter or SQL condition shows, in their sorted order, go to a new CSV, TSV or XLSX file that you pick. The open file is not changed.
+
+Each Pro tool has 3 free tries on this computer. A try is used only when the tool did its work (a replacement written, a large file opened, a new file saved). Cancel or Escape never uses one. Nothing about Pro shows until you click a Pro tool. To buy or unlock, run a "Zovo Pro" command from the Command Palette: Get Zovo Pro, Pay with PayPal, or I already paid.
 
 ## Support Zovo
 
-Zovo extensions are free, with no ads and no tracking. They are made by [theluckystrike](https://github.com/theluckystrike) on GitHub. If this one saves you time, you can support the work:
+Zovo Pro: USD 19 once, every Zovo viewer. [Get Zovo Pro on GitHub Sponsors](https://github.com/sponsors/theluckystrike/sponsorships?tier_id=679878) to turn on the Pro tools in this extension and in the other Zovo extensions you use. The free features stay free.
+
+Zovo extensions have no ads and no tracking. They are made by [theluckystrike](https://github.com/theluckystrike) on GitHub. You can also support the work with no Pro:
 
 - [Sponsor on GitHub](https://github.com/sponsors/theluckystrike)
 - [PayPal](https://www.paypal.com/paypalme/najzzz)
 - [Follow theluckystrike on GitHub](https://github.com/theluckystrike)
 
+### Need your format supported?
+
+Open a [format request](https://github.com/theluckystrike/spreadsheet-editor-vscode/issues/new?template=format-request.yml) with a sample file, and I reply there whether it can be done. For USD 299 once, through [this GitHub Sponsors tier](https://github.com/sponsors/theluckystrike/sponsorships?tier_id=679995), I add your file format or a missing feature to this extension, with tests, within 7 days.
+
 ## More tools by Zovo
 
-- [PDF Viewer & Reader to Read and View PDF in Dark Mode](https://marketplace.visualstudio.com/items?itemName=zovo.pdf-viewer-dark) reads PDFs with a real dark mode, search, an outline and thumbnails.
-- [XLSX Viewer & CSV Preview for Excel, XLS & Parquet](https://marketplace.visualstudio.com/items?itemName=zovo.table-viewer-vscode) opens CSV, TSV, Excel and Parquet files as a sortable, filterable table.
+- [PDF Viewer & PDF Reader to Read and View PDF (Dark Mode)](https://marketplace.visualstudio.com/items?itemName=zovo.pdf-viewer-dark) reads PDFs with a real dark mode, search, an outline and thumbnails.
+- [XLSX Viewer, Excel Viewer, CSV Viewer & Parquet Viewer (XLS, CSV Preview)](https://marketplace.visualstudio.com/items?itemName=zovo.table-viewer-vscode) opens CSV, TSV, Excel and Parquet files as a sortable, filterable table.
 - [DOCX Viewer & ODT Viewer, Word Document Preview (Dark Mode)](https://marketplace.visualstudio.com/items?itemName=zovo.docx-viewer-vscode) previews Word and ODT files with dark mode, an outline and search.
 
 See [all Zovo extensions on the Marketplace](https://marketplace.visualstudio.com/publishers/zovo).

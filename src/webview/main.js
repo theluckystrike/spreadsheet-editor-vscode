@@ -823,23 +823,40 @@
     $('st-right').textContent = right.join(' · ');
   }
 
-  function showNotice(text, level) {
+  function showNotice(text, level, action) {
     const n = $('notice');
     n.className = `notice ${level || 'info'}`;
     n.innerHTML = `<span></span><button class="nx" aria-label="Close">×</button>`;
     n.firstChild.textContent = text;
+    if (action) {
+      // The only Pro offer: on a file past the free size limits, next to the read-only note.
+      const b = document.createElement('button');
+      b.id = 'n-pro';
+      b.textContent = action;
+      b.addEventListener('click', () => post({ type: 'proLargeFile' }));
+      n.insertBefore(b, n.lastChild);
+    }
     n.hidden = false;
     n.querySelector('.nx').addEventListener('click', () => { n.hidden = true; layoutSpacer(); render(); });
     layoutSpacer(); render();
   }
 
-  function showFatal(message) {
+  function showFatal(message, proOffer) {
     const f = $('fatal');
     f.hidden = false;
     f.innerHTML = '<h2>This file cannot be edited here</h2><p></p><p><button id="x-text">Open as Text</button> <button id="x-set">Settings</button></p>';
     f.querySelector('p').textContent = message;
     $('x-text').addEventListener('click', () => post({ type: 'openAsText' }));
     $('x-set').addEventListener('click', () => post({ type: 'openSettings' }));
+    if (proOffer) {
+      const b = document.createElement('button');
+      b.id = 'x-pro';
+      b.textContent = proOffer;
+      b.addEventListener('click', () => post({ type: 'proLargeFile' }));
+      const row = $('x-set').parentNode;
+      row.appendChild(document.createTextNode(' '));
+      row.appendChild(b);
+    }
     $('toolbar').hidden = true;
     $('gridwrap').hidden = true;
   }
@@ -872,7 +889,7 @@
         if (!prev || prev.format !== m.format || JSON.stringify(prev.csv) !== JSON.stringify(m.csv) || prev.header !== m.header) csvOptionsUi(m);
         sheetsUi(m);
         if (!prev) {
-          if (m.readOnly) showNotice(m.readOnlyReason, 'warn');
+          if (m.readOnly) showNotice(m.readOnlyReason, 'warn', m.proOffer);
           else if (m.notices && m.notices.length) showNotice(m.notices.join(' '), 'warn');
           if (m.viewCount || m.columns.length) S.sel = { r: 0, c: 0, ar: 0, ac: 0 };
           kbd.focus();
@@ -921,7 +938,7 @@
         showNotice(m.message, 'error');
         if (S.meta) csvOptionsUi(S.meta);
         break;
-      case 'fatal': showFatal(m.message); break;
+      case 'fatal': showFatal(m.message, m.proOffer); break;
       case 'openFind': openFind(!!m.replace); break;
       default:
     }

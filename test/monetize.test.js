@@ -11,7 +11,7 @@ test('More free viewers starts with 3 to 5 related extensions, without this one'
   const rel = support.relatedProducts(SELF);
   assert.ok(rel.length >= 3 && rel.length <= 5, String(rel.length));
   assert.ok(rel.every((p) => p.id !== SELF));
-  assert.deepEqual(rel.map((p) => p.id), ["zovo.table-viewer-vscode", "zovo.sqlite-table-viewer", "zovo.zovo-parquet-viewer", "zovo.zovo-jsonl-viewer", "zovo.zovo-json-tree-viewer"]);
+  assert.deepEqual(rel.map((p) => p.id), ["zovo.pdf-viewer-dark", "zovo.table-viewer-vscode", "zovo.docx-viewer-vscode"]);
   const items = support.pickItems(SELF, () => false);
   assert.equal(items[0].label, 'Related to this extension');
   assert.deepEqual(items.slice(1, 1 + rel.length).map((i) => i.product.id), rel.map((p) => p.id));
@@ -60,6 +60,42 @@ test('picking an extension opens its Marketplace page and never installs it', as
   await s.moreViewers();
   assert.ok(opened.includes('https://github.com/theluckystrike'));
   assert.equal(ran.filter((a) => a[0] === 'workbench.extensions.installExtension').length, 0);
+});
+
+test('EXEC16: the footer leads with Zovo Pro in a Pro listing, and keeps Sponsor in the others', () => {
+  const html = support.footerHtml('x', true, '');
+  if (support.PRO) {
+    assert.match(html, /Zovo Pro, USD 19</);
+    assert.ok(html.includes('command:' + support.PRO.getPro));
+    assert.ok(!/>Sponsor</.test(html));
+    assert.ok(support.commandUris('x').includes(support.PRO.getPro));
+    if (support.PRO.payWithPayPal) assert.ok(html.includes('command:' + support.PRO.payWithPayPal));
+    assert.ok(html.indexOf('Zovo Pro') < html.indexOf('>PayPal<') || support.paypalUrl() === '');
+    assert.equal(support.PRO.tier, 'https://github.com/sponsors/theluckystrike/sponsorships?tier_id=679878');
+  } else {
+    assert.match(html, />Sponsor</);
+    assert.ok(!/Zovo Pro/.test(html));
+  }
+  let pkg = null;
+  try { pkg = require('../package.json'); } catch { pkg = null; }
+  if (pkg) assert.equal(pkg.sponsor && pkg.sponsor.url, support.PRO ? 'https://github.com/sponsors/theluckystrike/sponsorships?tier_id=679878' : support.sponsorUrl());
+});
+
+test('EXEC16: the walkthrough ends with 2 or 3 links to other Zovo extensions, with no money link and no nag', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const pkg = require('../package.json');
+  const steps = pkg.contributes.walkthroughs[0].steps;
+  const last = steps[steps.length - 1];
+  assert.equal(last.id, 'zovo-related');
+  assert.equal(steps.filter((s) => s.id === 'zovo-related').length, 1);
+  assert.equal(last.completionEvents, undefined);
+  const ids = [...last.description.matchAll(/\(command:extension\.open\?%5B%22([^%]+)%22%5D\)/g)].map((m) => m[1]);
+  assert.ok(ids.length >= 2 && ids.length <= 3, String(ids.length));
+  assert.ok(ids.every((i) => /^zovo\./.test(i) && i !== SELF));
+  assert.equal(new Set(ids).size, ids.length);
+  const md = fs.readFileSync(path.join(path.dirname(require.resolve('../package.json')), last.media.markdown), 'utf8');
+  for (const t of [last.description, md]) assert.ok(!/sponsors|paypal|USD|\$/i.test(t));
 });
 
 test('the extension pack is not a Related row here', () => {

@@ -115,6 +115,11 @@
         "category": "Spreadsheet Editor"
       },
       {
+        "command": "spreadsheetEditor.saveFilteredRows",
+        "title": "Save Filtered Rows as a New File... (Pro)",
+        "category": "Spreadsheet Editor"
+      },
+      {
         "command": "spreadsheetEditor.makeDefaultForCsv",
         "title": "Make Spreadsheet Editor the Default for CSV and TSV",
         "category": "Spreadsheet Editor"
@@ -141,23 +146,28 @@
       },
       {
         "command": "spreadsheetEditor.enterLicenseKey",
-        "title": "Zovo: Enter license key",
-        "category": "Spreadsheet Editor"
+        "title": "Enter Zovo Pro license key",
+        "category": "Zovo Pro"
       },
       {
         "command": "spreadsheetEditor.getPro",
-        "title": "Zovo: Get Pro",
-        "category": "Spreadsheet Editor"
+        "title": "Get Zovo Pro (USD 19 once, all 22 Zovo extensions)",
+        "category": "Zovo Pro"
       },
       {
         "command": "spreadsheetEditor.unlockWithSponsors",
-        "title": "Zovo: Unlock Pro with GitHub Sponsors",
-        "category": "Spreadsheet Editor"
+        "title": "I already paid: unlock with GitHub Sponsors",
+        "category": "Zovo Pro"
       },
       {
         "command": "spreadsheetEditor.removeLicense",
-        "title": "Zovo: Remove license from this editor",
-        "category": "Spreadsheet Editor"
+        "title": "Remove Zovo Pro from this editor",
+        "category": "Zovo Pro"
+      },
+      {
+        "command": "spreadsheetEditor.payWithPayPal",
+        "title": "Pay for Zovo Pro with PayPal (USD 19, team of 5 USD 59)",
+        "category": "Zovo Pro"
       }
     ],
     "keybindings": [
@@ -185,6 +195,11 @@
           "command": "spreadsheetEditor.openAsText",
           "when": "activeCustomEditorId =~ /^spreadsheetEditor\\./",
           "group": "navigation@40"
+        },
+        {
+          "command": "spreadsheetEditor.saveFilteredRows",
+          "when": "activeCustomEditorId =~ /^spreadsheetEditor\\./",
+          "group": "z_pro@1"
         }
       ],
       "explorer/context": [
@@ -208,24 +223,8 @@
           "when": "activeCustomEditorId =~ /^spreadsheetEditor\\./"
         },
         {
-          "command": "spreadsheetEditor.enterLicenseKey",
-          "when": "spreadsheetEditor.proEnabled"
-        },
-        {
-          "command": "spreadsheetEditor.getPro",
-          "when": "spreadsheetEditor.proEnabled"
-        },
-        {
-          "command": "spreadsheetEditor.unlockWithSponsors",
-          "when": "spreadsheetEditor.proEnabled"
-        },
-        {
-          "command": "spreadsheetEditor.removeLicense",
-          "when": "spreadsheetEditor.proEnabled"
-        },
-        {
-          "command": "spreadsheetEditor.replaceInFiles",
-          "when": "spreadsheetEditor.proEnabled"
+          "command": "spreadsheetEditor.saveFilteredRows",
+          "when": "activeCustomEditorId =~ /^spreadsheetEditor\\./"
         }
       ]
     },
@@ -316,15 +315,23 @@
             "completionEvents": [
               "onCommand:workbench.action.openSettings"
             ]
+          },
+          {
+            "id": "zovo-related",
+            "title": "Files that go with this one",
+            "description": "If your project also has PDF files or spreadsheets and CSV files, these free Zovo extensions open them. A link opens the extension page, and you choose there whether to install it.\n[PDF Viewer](command:extension.open?%5B%22zovo.pdf-viewer-dark%22%5D)\n[XLSX and CSV Viewer](command:extension.open?%5B%22zovo.table-viewer-vscode%22%5D)",
+            "media": {
+              "markdown": "walkthrough/related.md"
+            }
           }
         ]
       }
     ]
   },
   "scripts": {
-    "build": "node scripts/build.js --production",
-    "test": "node scripts/build.js --production && node --test \"test/*.test.js\"",
-    "package": "npm run build && npx -y @vscode/vsce package --no-dependencies -o dist/"
+    "build": "node scripts/build.js production",
+    "test": "node scripts/build.js production && node scripts/test.js",
+    "package": "npm run build && node scripts/package.js"
   },
   "devDependencies": {
     "@types/vscode": "~1.90.0",
@@ -339,6 +346,6 @@
     "url": "https://github.com/theluckystrike/spreadsheet-editor-vscode"
   },
   "sponsor": {
-    "url": "https://github.com/sponsors/theluckystrike"
+    "url": "https://github.com/sponsors/theluckystrike/sponsorships?tier_id=679878"
   }
 }

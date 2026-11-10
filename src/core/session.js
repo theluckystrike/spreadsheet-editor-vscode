@@ -659,6 +659,7 @@ function createSession({ post, loadXlsx }) {
         const st = computeStats(table, { columns: [msg.col], top: 3 });
         return st;
       }
+      case 'exportView': return exportView(v, msg);
       case 'copy': {
         const grid = gridOf(v);
         const ids = viewIds(v);
@@ -674,6 +675,42 @@ function createSession({ post, loadXlsx }) {
       }
       default: throw new Error(`Unknown message ${msg.type}`);
     }
+  }
+
+  /**
+   * Save filtered rows (Pro): the rows this view shows, in its order, to a new CSV, TSV or XLSX file. The header row
+   * goes first when the file has one. The open file and its edit log are not touched. 0 rows: nothing is written.
+   */
+  async function exportView(v, msg) {
+    const grid = gridOf(v);
+    const ids = viewIds(v);
+    if (!ids.length) return { rows: 0 };
+    if (msg.path && source && source.path && path.resolve(msg.path) === path.resolve(source.path)) throw new Error('Choose a new file. This tool never writes to the open file.');
+    const hid = headerOn() ? dataIds(grid).headerId : null;
+    const w = grid.width;
+    const cellsOf = id => { const r = grid.row(id); const out = new Array(w); for (let c = 0; c < w; c++) { const x = r[c]; out[c] = x === undefined || x === null ? '' : String(x); } return out; };
+    let bytes;
+    if (msg.kind === 'xlsx') {
+      const ExcelJS = require('exceljs');
+      const { textToValue } = require('./xlsxdoc');
+      const wb = new ExcelJS.Workbook();
+      const name = (isXlsx() ? sheetOf(v).name : 'Rows').replace(/[\\/?*[\]:]/g, ' ').slice(0, 31) || 'Rows';
+      const ws = wb.addWorksheet(name);
+      if (hid !== null) ws.addRow(cellsOf(hid));
+      for (const id of ids) ws.addRow(cellsOf(id).map(t => textToValue(t, null)));
+      bytes = Buffer.from(await wb.xlsx.writeBuffer());
+    } else {
+      const d = msg.kind === 'tsv' ? '\t' : ',';
+      const eol = !isXlsx() && doc.eol === '\r\n' ? '\r\n' : '\n';
+      const field = s => (s.includes(d) || /["\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s);
+      const parts = [];
+      if (!isXlsx() && doc.bom > 0 && /^utf-?8$/i.test(doc.encoding)) parts.push('\ufeff');
+      if (hid !== null) parts.push(cellsOf(hid).map(field).join(d) + eol);
+      for (const id of ids) parts.push(cellsOf(id).map(field).join(d) + eol);
+      bytes = Buffer.from(parts.join(''), 'utf8');
+    }
+    if (msg.path) return { rows: ids.length, ...writeAtomic(msg.path, [bytes]) };
+    return { rows: ids.length, bytes };
   }
 
   return { handle, _state: () => ({ doc, undo, redo, log, views }) };

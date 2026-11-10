@@ -5,8 +5,7 @@ const path = require('path');
 const { Worker } = require('worker_threads');
 const { buildHtml } = require('./html');
 const { validateWebviewMessage } = require('./core/protocol');
-const config = require('./config');
-const { effectiveLimits, isEnabled } = require('./pro');
+const { createPro, effectiveLimits, isEnabled } = require('./pro');
 const { createRatingPrompt } = require('./rate');
 const { registerSupport, commandUris, showLinks } = require('./support');
 
@@ -22,7 +21,9 @@ const EXCEL_EXT = new Set(['.xlsx', '.xlsm']);
 
 let rating = { success() {}, failure() {} };
 const openDocs = new Set(); // SheetDocuments open in a tab
-let license = null; // Zovo Pro facade, only when config.PRO_ENABLED
+let pro = null; // Zovo Pro (src/pro.js): 3 free tries per Pro tool, then the one panel
+const largeGrant = new Set(); // uris the user chose to open past the free size limits (one Pro try each)
+const panelInfo = new WeakMap(); // webview panel -> { doc, viewId } (Save Filtered Rows)
 
 function settings() {
   const c = vscode.workspace.getConfiguration(SECTION);
@@ -126,8 +127,14 @@ class SheetDocument {
 
   async open(openContext) {
     const s = settings();
-    const limits = effectiveLimits(s, entitlement(), userSetKeys());
+    if (pro && pro.ready) { try { await pro.ready; } catch { /* local read only; not Pro */ } }
     const uri = this.uri;
+    const trial = largeGrant.delete(uri.toString()); // the user clicked the Pro offer for this file
+    const ent = entitlement();
+    const userSet = userSetKeys();
+    const free = effectiveLimits(s, { enabled: true, licensed: false }, userSet);
+    const proLimits = effectiveLimits(s, { enabled: true, licensed: true }, userSet);
+    const limits = trial ? proLimits : effectiveLimits(s, ent, userSet);
     let size = 0;
     try {
       const st = await vscode.workspace.fs.stat(uri);
@@ -137,6 +144,15 @@ class SheetDocument {
       this.fatal = `The file could not be read: ${e.message || e}`;
       return;
     }
+    const M = 1048576;
+    // Past the free limits but within the Pro ones: the free path stays as it is (refused or read-only), plus one
+    // button in that note to open it with Zovo Pro. Nothing else about Pro shows on open.
+    if (!ent.licensed && !trial) {
+      this.proOffer = this.format === 'xlsx'
+        ? size > free.maxExcelSizeMB * M && size <= proLimits.maxExcelSizeMB * M
+        : (size > free.maxFileSizeMB * M && size <= proLimits.maxFileSizeMB * M) || (size > free.maxEditSizeMB * M && size <= proLimits.maxEditSizeMB * M);
+    }
+    this.proTry = trial && !ent.licensed && (this.format === 'xlsx' ? size > free.maxExcelSizeMB * M : size > free.maxEditSizeMB * M);
     if (this.format === 'xlsx' && size > limits.maxExcelSizeMB * 1048576) {
       this.fatal = `This workbook is ${mb(size)}. Workbooks up to ${limits.maxExcelSizeMB} MB open for editing here (setting spreadsheetEditor.maxExcelSizeMB). To look through a larger workbook, open it in a viewer that streams it, such as XLSX Viewer by Zovo.`;
       this.tooBig = true;
@@ -167,6 +183,7 @@ class SheetDocument {
         readOnly: this.readOnly, readOnlyReason: this.readOnlyReason, backup,
       });
       if (backup && this.opened.restored) { this.depth = 1; this.restoredFromBackup = true; }
+      if (this.proTry && pro) await pro.produced('large-files'); // the large file is open: one try used
     } catch (e) {
       this.fatal = friendlyError(e, this.format);
       this.closing = true;
@@ -192,13 +209,48 @@ function friendlyError(e, format) {
 }
 
 // ---------------------------------------------------------------------------------------------------------
-// License (Zovo Pro). Off in this build: config.PRO_ENABLED is false, so nothing is locked, no license
-// command shows, and no network call can happen.
+// Zovo Pro. Free users keep the free limits (the setting defaults); Pro raises them. The license module reads only
+// local state at activation; it goes online only after a click on a pay or unlock button.
 
 function entitlement() {
-  const enabled = !!config.PRO_ENABLED;
-  const licensed = enabled && !!(license && license.isPro(config.SKU));
-  return { enabled, licensed };
+  return { enabled: true, licensed: !!(pro && pro.licensed) };
+}
+
+function proOfferLabel() {
+  const n = pro ? pro.left('large-files') : 0;
+  return n ? `Open for editing with Zovo Pro (free try, ${n} of 3 left)` : 'Open for editing with Zovo Pro';
+}
+
+function tabsOf(uri) {
+  const groups = vscode.window.tabGroups ? vscode.window.tabGroups.all : [];
+  const out = [];
+  for (const g of groups) {
+    for (const t of g.tabs) {
+      const i = t.input;
+      if (i && i.uri && typeof i.viewType === 'string' && /spreadsheetEditor\.(csv|xlsx)$/.test(i.viewType) && i.uri.toString() === uri.toString()) out.push(t);
+    }
+  }
+  return out;
+}
+
+/** The Pro offer on a file past the free limits: a try (or Pro), then the file opens again with the Pro limits. */
+async function openLargeWithPro(doc) {
+  if (!doc.proOffer || !pro || doc.dirty) return;
+  if (!(await pro.allowed('large-files'))) return; // Cancel or Escape: nothing changes, no try used
+  const key = doc.uri.toString();
+  largeGrant.add(key);
+  const tabs = tabsOf(doc.uri);
+  const column = tabs.length && tabs[0].group ? tabs[0].group.viewColumn : undefined;
+  if (tabs.length) {
+    const gone = new Promise(res => { if (doc.disposed) { res(); return; } doc.onDidDispose(res); setTimeout(res, 3000); });
+    await vscode.window.tabGroups.close(tabs);
+    await gone;
+  }
+  try {
+    await vscode.commands.executeCommand('vscode.openWith', doc.uri, doc.format === 'xlsx' ? VIEW_TYPE : CSV_VIEW_TYPE, column);
+  } finally {
+    if (!doc.disposed) largeGrant.delete(key); // the old tab is still open: no new open, no grant left behind
+  }
 }
 
 function userSetKeys() {
@@ -442,10 +494,11 @@ class SpreadsheetEditorProvider {
       post,
       meta: m => {
         if (!counted && m.columns && m.columns.length && !doc.fatal) { counted = true; rating.success(doc.uri); }
-        post({ ...m, dirty: doc.dirty, conflict: doc.conflict, fileName: name });
+        post({ ...m, dirty: doc.dirty, conflict: doc.conflict, fileName: name, proOffer: doc.proOffer && doc.readOnly ? proOfferLabel() : undefined });
       },
     };
     doc.views.set(viewId, bridge);
+    panelInfo.set(panel, { doc, viewId });
     if (doc.fatal) rating.failure();
 
     const reply = (reqId, type, value) => panel.webview.postMessage({ type, reqId, ...value });
@@ -459,7 +512,7 @@ class SpreadsheetEditorProvider {
             ready = true;
             panel.webview.postMessage({ type: 'init', fileName: name, format: doc.format, ext: doc.ext, maxCopyRows: settings().maxCopyRows });
             while (queue.length) panel.webview.postMessage(queue.shift());
-            if (doc.fatal) { panel.webview.postMessage({ type: 'fatal', message: doc.fatal, tooBig: !!doc.tooBig }); return; }
+            if (doc.fatal) { panel.webview.postMessage({ type: 'fatal', message: doc.fatal, tooBig: !!doc.tooBig, proOffer: doc.proOffer ? proOfferLabel() : undefined }); return; }
             doc.send({ type: 'hello', view: viewId });
             return;
           case 'undo': await vscode.commands.executeCommand('undo'); return;
@@ -468,6 +521,7 @@ class SpreadsheetEditorProvider {
           case 'saveAsUtf8': await this.saveUtf8Copy(doc); return;
           case 'openSettings': await vscode.commands.executeCommand('workbench.action.openSettings', SECTION); return;
           case 'openAsText': await vscode.commands.executeCommand('vscode.openWith', doc.uri, 'default'); return;
+          case 'proLargeFile': await openLargeWithPro(doc); return;
           case 'getRows': case 'sort': case 'filter': case 'sheet': case 'refreshView':
             doc.send({ ...m, view: viewId });
             return;
@@ -549,14 +603,12 @@ async function setDefaultForCsv(on) {
 function activate(context) {
   rating = createRatingPrompt({ vscode, context, extensionId: SELF_ID, section: SECTION, name: 'Spreadsheet Editor' });
   registerSupport({ vscode, context, prefix: SECTION, selfId: SELF_ID });
-  if (config.PRO_ENABLED) {
-    // eslint-disable-next-line global-require
-    const { createLicense } = require('./license');
-    license = createLicense({ vscode, context, sku: config.SKU, name: 'Spreadsheet Editor', commandPrefix: SECTION });
-    context.subscriptions.push(vscode.window.registerUriHandler({ handleUri: uri => license.handleUri(uri) }));
-    context.subscriptions.push(vscode.commands.registerCommand('spreadsheetEditor.replaceInFiles', () => replaceInFiles(context)));
-  }
-  vscode.commands.executeCommand('setContext', 'spreadsheetEditor.proEnabled', !!config.PRO_ENABLED);
+  pro = createPro({ vscode, context });
+  context.subscriptions.push(
+    vscode.window.registerUriHandler({ handleUri: uri => pro.handleUri(uri) }),
+    vscode.commands.registerCommand('spreadsheetEditor.replaceInFiles', () => replaceInFiles(context)),
+    vscode.commands.registerCommand('spreadsheetEditor.saveFilteredRows', () => saveFilteredRows()),
+  );
 
   context.subscriptions.push(
     ...[VIEW_TYPE, CSV_VIEW_TYPE].map(id => vscode.window.registerCustomEditorProvider(id, new SpreadsheetEditorProvider(context), {
@@ -589,14 +641,11 @@ function activate(context) {
 }
 
 /**
- * Find and Replace in CSV Files (Zovo Pro candidate). Registered only when config.PRO_ENABLED is true; this build
- * ships with it off, so the command is neither registered nor shown. Rows that do not change stay byte for byte.
+ * Find and Replace in CSV Files (Zovo Pro tool). Rows that do not change stay byte for byte. A try counts only
+ * after at least one cell was replaced and written; Escape at any step uses none.
  */
 async function replaceInFiles(context) {
-  if (!license || !license.isPro(config.SKU)) {
-    const ok = await license.requirePro('Find and Replace in CSV Files', 'Replace text in every CSV and TSV file of the workspace at once. Rows that do not change stay byte for byte.');
-    if (!ok) return;
-  }
+  if (!(await pro.allowed('multi-file-replace'))) return;
   const find = await vscode.window.showInputBox({ title: 'Find and Replace in CSV Files (1/3)', prompt: 'Find: text, or a regular expression if you pick that option next', ignoreFocusOut: true });
   if (!find) return;
   const replace = await vscode.window.showInputBox({ title: 'Find and Replace in CSV Files (2/3)', prompt: `Replace "${find}" with ($1 puts back a regex group)`, ignoreFocusOut: true });
@@ -612,7 +661,7 @@ async function replaceInFiles(context) {
   if (!files.length) { vscode.window.showInformationMessage('No CSV or TSV files in this workspace.'); return; }
   const busy = new Set([...openDocs].filter(d => d.dirty).map(d => d.uri.toString()));
   for (const d of vscode.workspace.textDocuments) if (d.isDirty) busy.add(d.uri.toString());
-  const maxBytes = settings().maxEditSizeMB * 1048576;
+  const maxBytes = effectiveLimits(settings(), entitlement(), userSetKeys()).maxEditSizeMB * 1048576;
   const w = new Worker(path.join(context.extensionPath, 'dist', 'worker.js'), { resourceLimits: { maxOldGenerationSizeMb: 4096 } });
   let seq = 0;
   const pending = new Map();
@@ -639,12 +688,53 @@ async function replaceInFiles(context) {
       const r = await call({ path: p.f.uri.fsPath, query, replace, maxBytes, apply: true });
       if (r.written) { written++; cells += r.count; }
     }
+    if (cells > 0) await pro.produced('multi-file-replace');
     vscode.window.showInformationMessage(`Replaced ${cells.toLocaleString('en-US')} cells in ${written} ${written === 1 ? 'file' : 'files'}.`);
   } catch (e) {
     vscode.window.showErrorMessage(`Replace in files stopped: ${e.message}. Files already done are saved; the others are unchanged.`);
   } finally {
     w.terminate();
   }
+}
+
+/**
+ * Save Filtered Rows as a New File (Zovo Pro tool): the rows the active view shows (filter, SQL condition, sort) go
+ * to a new CSV, TSV or XLSX file picked in a save dialog. The open file is never written. A try counts only after
+ * the new file was written; Escape in the dialog or a view with no rows uses none.
+ */
+async function saveFilteredRows() {
+  const info = shared.active ? panelInfo.get(shared.active) : null;
+  if (!info || info.doc.fatal || info.doc.disposed) { vscode.window.showInformationMessage('Open a CSV or Excel file in Spreadsheet Editor first.'); return; }
+  if (!(await pro.allowed('save-filtered'))) return;
+  const { doc, viewId } = info;
+  const dir = vscode.Uri.joinPath(doc.uri, '..');
+  const base = path.posix.basename(doc.uri.path).replace(/\.[^.]+$/, '');
+  const ext = doc.format === 'xlsx' ? 'xlsx' : doc.ext === 'tsv' ? 'tsv' : 'csv';
+  const target = await vscode.window.showSaveDialog({
+    defaultUri: vscode.Uri.joinPath(dir, `${base} (filtered).${ext}`),
+    filters: { 'CSV file': ['csv'], 'TSV file': ['tsv'], 'Excel workbook': ['xlsx'] },
+    saveLabel: 'Save Rows',
+    title: 'Save the rows shown as a new file',
+  });
+  if (!target) return; // cancelled: no try used
+  if (target.toString() === doc.uri.toString() || [...openDocs].some(d => d.uri.toString() === target.toString())) {
+    vscode.window.showWarningMessage('Choose a file that is not open here. This tool never writes to an open file.');
+    return;
+  }
+  const kind = /\.xlsx$/i.test(target.path) ? 'xlsx' : /\.(tsv|tab)$/i.test(target.path) ? 'tsv' : 'csv';
+  let r;
+  try {
+    r = await doc.rpc('exportView', { view: viewId, kind, path: target.scheme === 'file' ? target.fsPath : undefined });
+    if (r.rows && r.bytes) await vscode.workspace.fs.writeFile(target, new Uint8Array(r.bytes.buffer || r.bytes, r.bytes.byteOffset || 0, r.bytes.byteLength || r.bytes.length));
+  } catch (e) {
+    vscode.window.showErrorMessage(`Not saved: ${e.message || e}. The open file is unchanged.`);
+    return;
+  }
+  if (!r.rows) { vscode.window.showInformationMessage('The view shows no rows, so nothing was saved.'); return; }
+  await pro.produced('save-filtered');
+  const name = path.posix.basename(target.path);
+  const pick = await vscode.window.showInformationMessage(`Saved ${r.rows.toLocaleString('en-US')} ${r.rows === 1 ? 'row' : 'rows'} to ${name}. The open file is unchanged.`, 'Open It');
+  if (pick === 'Open It') await vscode.commands.executeCommand('vscode.openWith', target, kind === 'xlsx' ? VIEW_TYPE : CSV_VIEW_TYPE);
 }
 
 function activeUri() {

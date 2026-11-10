@@ -6,8 +6,7 @@ const path = require('path');
 const pkg = require('../package.json');
 const { buildHtml } = require('../src/html');
 const { validateWebviewMessage } = require('../src/core/protocol');
-const { effectiveLimits, isEnabled, FREE_LIMITS } = require('../src/pro');
-const config = require('../src/config');
+const { effectiveLimits, isEnabled, FREE_LIMITS, PRO_DEFAULTS } = require('../src/pro');
 
 const root = path.join(__dirname, '..');
 const read = p => fs.readFileSync(path.join(root, p), 'utf8');
@@ -42,7 +41,7 @@ test('CSP: default-src none, scripts by nonce only, no remote sources', () => {
   assert.ok(html.includes('&lt;x&gt;'));
 });
 
-test('no network in the shipped code: no http, https, net or fetch outside the switched-off license module', () => {
+test('no network in the shipped code: no http, https, net or fetch outside the license module', () => {
   const files = [];
   const walk = d => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else if (p.endsWith('.js')) files.push(p); } };
   walk(path.join(root, 'src'));
@@ -52,15 +51,20 @@ test('no network in the shipped code: no http, https, net or fetch outside the s
     assert.ok(!/require\(['"](https?|net|tls|dgram|http2)['"]\)/.test(s), f);
     assert.ok(!/\bfetch\(|XMLHttpRequest|WebSocket\(/.test(s), f);
   }
-  assert.equal(config.PRO_ENABLED, false, 'Pro is switched off in this build, so the license module is never loaded');
-  assert.match(read('src/extension.js'), /if \(config\.PRO_ENABLED\) \{[\s\S]*require\('\.\/license'\)/);
+  assert.ok(!fs.existsSync(path.join(root, 'src', 'config.js')), 'no Pro switch: Pro is on in this build');
+  assert.match(read('src/license/index.js'), /MODULE_VERSION = '2026-11-10\.exec14'/);
 });
 
-test('Pro switched off: limits are the settings, nothing is locked; switched on, free keeps the defaults', () => {
+test('free limits are exactly the setting defaults (512 MB edit, 1024 MB open, 40 MB workbook); Pro raises them', () => {
   const s = { maxEditSizeMB: 512, maxFileSizeMB: 1024, maxExcelSizeMB: 40 };
+  assert.deepEqual(FREE_LIMITS, s);
   assert.deepEqual(effectiveLimits(s, { enabled: false }).maxEditSizeMB, 512);
   const free = effectiveLimits({ ...s, maxEditSizeMB: 4000 }, { enabled: true, licensed: false });
   assert.equal(free.maxEditSizeMB, FREE_LIMITS.maxEditSizeMB);
+  assert.equal(effectiveLimits({ ...s, maxEditSizeMB: 100 }, { enabled: true, licensed: false }).maxEditSizeMB, 100, 'a lower setting still wins');
+  const lic = effectiveLimits(s, { enabled: true, licensed: true });
+  assert.deepEqual([lic.maxEditSizeMB, lic.maxFileSizeMB, lic.maxExcelSizeMB], [PRO_DEFAULTS.maxEditSizeMB, PRO_DEFAULTS.maxFileSizeMB, PRO_DEFAULTS.maxExcelSizeMB]);
+  assert.ok(PRO_DEFAULTS.maxFileSizeMB < 2048, 'a CSV is read into one buffer, which Node caps at 2 GiB');
   for (const k of Object.keys(FREE_LIMITS)) assert.equal(FREE_LIMITS[k], pkg.contributes.configuration.properties[`spreadsheetEditor.${k}`].default, k);
   assert.equal(isEnabled('edit', { enabled: true, licensed: false }), true);
   assert.equal(isEnabled('find-replace', { enabled: true, licensed: false }), true);

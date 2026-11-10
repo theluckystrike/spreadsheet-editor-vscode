@@ -121,7 +121,7 @@ const DELIMS = new Set(['auto', ',', '\t', ';', '|', ':', ' ']);
 function validateWebviewMessage(m) {
   if (!m || typeof m !== 'object' || typeof m.type !== 'string') return null;
   switch (m.type) {
-    case 'ready': case 'undo': case 'redo': case 'save': case 'openSettings': case 'openAsText': case 'refreshView': case 'saveAsUtf8':
+    case 'ready': case 'undo': case 'redo': case 'save': case 'openSettings': case 'openAsText': case 'refreshView': case 'saveAsUtf8': case 'proLargeFile':
       return { type: m.type };
     case 'getRows': {
       const start = int(m.start, 0, 2 ** 31), count = int(m.count, 0, MAX_PAGE), reqId = int(m.reqId, 0, 2 ** 31);
