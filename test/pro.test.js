@@ -28,7 +28,7 @@ async function xlsx() {
   return p;
 }
 const tries = (s) => s.state.get(TRIAL_KEY) || {};
-const PANEL_BUTTONS = ['Get Zovo Pro, USD 19', 'Pay with PayPal', 'I already paid'];
+const PANEL_BUTTONS = ['Pay by card (USD 19)', 'Get Zovo Pro with GitHub Sponsors', 'Pay with PayPal', 'Enter a key'];
 
 function trapNetwork() {
   const calls = [];
@@ -50,7 +50,7 @@ test('activation and a normal open: no network, no message, no status line, no P
   const s = loadExtension();
   try {
     s.ext.activate(s.context);
-    for (const c of ['getPro', 'payWithPayPal', 'unlockWithSponsors', 'enterLicenseKey', 'removeLicense', 'replaceInFiles', 'saveFilteredRows']) assert.ok(s.commands.has(`spreadsheetEditor.${c}`), c);
+    for (const c of ['getPro', 'payWithPayPal', 'payByCard', 'unlockWithSponsors', 'enterLicenseKey', 'removeLicense', 'replaceInFiles', 'saveFilteredRows']) assert.ok(s.commands.has(`spreadsheetEditor.${c}`), c);
     const v = await openInEditor(s, csv());
     const meta = v.posted.find((m) => m.type === 'meta');
     assert.equal(meta.readOnly, false);
@@ -90,7 +90,7 @@ test('Save filtered rows: Escape keeps the try; 3 saves use the 3 tries; the 4th
     const panel = s.log.info.find((m) => /part of Zovo Pro/.test(m.text));
     assert.match(panel.text, /^Save filtered rows as a new file is part of Zovo Pro/);
     assert.equal(panel.opts.modal, true);
-    assert.deepEqual(panel.buttons.slice(0, 3), PANEL_BUTTONS);
+    assert.deepEqual(panel.buttons.slice(0, 4), PANEL_BUTTONS);
     assert.match(panel.opts.detail, /You used the 3 free tries/);
     assert.match(panel.opts.detail, /USD 19/);
     assert.match(panel.opts.detail, /Find and Replace in CSV Files/);
@@ -125,12 +125,12 @@ test('Save filtered rows to XLSX: header and the rows shown, numbers stay number
   } finally { s.restore(); }
 });
 
-test('Get Zovo Pro on the panel opens the USD 19 tier (sponsorships?tier_id=679878), never the generic page', async () => {
+test('Get Zovo Pro with GitHub Sponsors on the panel opens the USD 19 tier (sponsorships?tier_id=679878), never the generic page', async () => {
   const s = loadExtension();
   try {
     s.ext.activate(s.context);
     s.state.set(TRIAL_KEY, { 'multi-file-replace': 3 });
-    s.ui.info.push('Get Zovo Pro, USD 19');
+    s.ui.info.push('Get Zovo Pro with GitHub Sponsors');
     await s.commands.get('spreadsheetEditor.replaceInFiles')();
     assert.deepEqual(s.log.external.filter((u) => /github\.com\/sponsors/.test(u)), ['https://github.com/sponsors/theluckystrike/sponsorships?tier_id=679878']);
     assert.equal(s.log.progress.length, 0, 'the tool did not run');
@@ -221,7 +221,7 @@ test('large files: the offer reopens the file with the Pro limits and the try co
     await y.send({ type: 'proLargeFile' }); // panel, then Escape
     const panel = s.log.info.find((m) => /part of Zovo Pro/.test(m.text));
     assert.match(panel.text, /^Edit files past the free size limits is part of Zovo Pro/);
-    assert.deepEqual(panel.buttons.slice(0, 3), PANEL_BUTTONS);
+    assert.deepEqual(panel.buttons.slice(0, 4), PANEL_BUTTONS);
     assert.equal(s.log.closed.length, closed, 'Escape: the tab stays as it is');
     assert.equal(tries(s)['large-files'], 3);
   } finally { s.restore(); }
@@ -244,4 +244,18 @@ test('createPro with a license: Pro tools run without counting tries and without
   }
   assert.equal(asked, 0);
   assert.deepEqual(status, []);
+});
+
+test('Pay by card (USD 19) on the panel opens the license Worker with a client reference; the tool does not run', async () => {
+  const s = loadExtension();
+  try {
+    s.ext.activate(s.context);
+    s.state.set(TRIAL_KEY, { 'multi-file-replace': 3 });
+    s.ui.info.push('Pay by card (USD 19)');
+    await s.commands.get('spreadsheetEditor.replaceInFiles')();
+    const card = s.log.external.filter((u) => /license\.zovo\.one/.test(u));
+    assert.equal(card.length, 1, s.log.external.join(' '));
+    assert.match(card[0], /^https:\/\/license\.zovo\.one\/buy\/zovo-pro\?client_reference_id=[0-9a-f-]{8,}/);
+    assert.equal(s.log.progress.length, 0, 'the tool did not run');
+  } finally { s.restore(); }
 });

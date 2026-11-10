@@ -89,7 +89,9 @@ test('embedded public key is a real Ed25519 SPKI key (not the placeholder)', () 
 });
 
 // --- VS Code side with a fake vscode API ---
-const { createLicense } = require(fs.existsSync(path.join(__dirname, '..', 'index.js')) ? '../index.js' : '../src/license/index.js');
+const IDX = require(fs.existsSync(path.join(__dirname, '..', 'index.js')) ? '../index.js' : '../src/license/index.js');
+// Older tests pin the panel without the card rail, whatever the build's config.js says; CARD1 tests pass cardBuyUrl.
+const createLicense = (o) => IDX.createLicense({ cardBuyUrl: '', ...o });
 
 function fakeVscode(answers = {}) {
   const log = { info: [], warn: [], opened: [], commands: {}, input: [], picks: [] };
@@ -208,7 +210,7 @@ test('facade unlock() with no rail id: the "I already paid" quick pick, GitHub S
 });
 
 test('EXEC14 order: panel [Get Zovo Pro, USD 19] [Pay with PayPal] [I already paid]; the paid pick lists Sponsors, key, other rails', async () => {
-  assert.equal(require(fs.existsSync(path.join(__dirname, '..', 'index.js')) ? '../index.js' : '../src/license/index.js').MODULE_VERSION, '2026-11-10.exec14');
+  assert.equal(IDX.MODULE_VERSION, '2026-11-10.card1');
   const polar = { id: 'polar', label: 'Polar', ready: Promise.resolve(), isPro: () => false, unlock: async () => ({ pro: false, reason: 'cancelled' }) };
   let buttons;
   const f = fakeVscode({ info: (msg, rest) => { if (rest[0] && rest[0].modal) buttons = rest.slice(1); return undefined; } });
@@ -488,4 +490,128 @@ test('CONV2 sequence: PayPal return message, then Get Pro arms the Sponsors retu
   await f.log.commands['hexViewer.getPro']();
   f.log.win({ focused: false }); f.log.win({ focused: true }); await tick(); await tick();
   assert.match(f.log.info.at(-1), /^Back from GitHub Sponsors\?/);
+});
+
+// ---- CARD1 (10 Nov): the Stripe card rail through the license Worker (funding.json card_buy_url) ----
+const CARD = 'https://license.zovo.one/buy/zovo-pro';
+const panelOf = (f, pickModal, more = {}) => fakeVscode({ info: (msg, rest) => { if (rest[0] && rest[0].modal) { f.buttons = rest.slice(1); return pickModal; } return more.info ? more.info(msg, rest) : undefined; }, ...more.answers });
+function withClipboard(f, text) { f.vscode.env.clipboard = { readText: async () => { f.log.clipReads = (f.log.clipReads || 0) + 1; return text; } }; return f; }
+
+test('CARD1 panel order with card_buy_url: Pay by card (USD 19), GitHub Sponsors, PayPal, Enter a key', async () => {
+  const box = {};
+  const f = panelOf(box, undefined);
+  const pro = mk(f, { cardBuyUrl: CARD, commandPrefix: 'hexViewer' });
+  await pro.ready;
+  assert.equal(pro.cardBuyUrl, CARD);
+  assert.deepEqual(pro.buttons(), ['Pay by card (USD 19)', 'Get Zovo Pro with GitHub Sponsors', 'Pay with PayPal', 'Enter a key']);
+  assert.equal(await pro.requirePro('Checksums', { triesUsed: 3 }), false);
+  assert.deepEqual(box.buttons, ['Pay by card (USD 19)', 'Get Zovo Pro with GitHub Sponsors', 'Pay with PayPal', 'Enter a key']);
+  assert.ok('hexViewer.payByCard' in f.log.commands);
+  assert.equal(f.log.opened.length, 0); // nothing opens until a click
+  // no PayPal link: the PayPal button goes, the rest keep their order
+  const np = mk(fakeVscode(), { cardBuyUrl: CARD, paypalUrl: '' });
+  assert.deepEqual(np.buttons(), ['Pay by card (USD 19)', 'Get Zovo Pro with GitHub Sponsors', 'Enter a key']);
+  // empty or foreign card_buy_url: the EXEC14 panel, no card command
+  for (const u of ['', 'https://evil.example/buy/zovo-pro', 'http://license.zovo.one/buy/zovo-pro', 'https://license.zovo.one/claim?x=1']) {
+    const g = fakeVscode();
+    const p = mk(g, { cardBuyUrl: u, commandPrefix: 'hexViewer' });
+    assert.deepEqual(p.buttons(), ['Get Zovo Pro, USD 19', 'Pay with PayPal', 'I already paid'], u);
+    assert.ok(!('hexViewer.payByCard' in g.log.commands), u);
+  }
+});
+
+test('CARD1 Pay by card opens card_buy_url with the stable random install id; arms the return message', async () => {
+  const box = {};
+  const f = panelOf(box, 'Pay by card (USD 19)');
+  const pro = mk(f, { cardBuyUrl: CARD, commandPrefix: 'hexViewer' });
+  await pro.ready;
+  assert.equal(await pro.requirePro('Checksums'), false);
+  assert.match(f.log.opened[0], /^https:\/\/license\.zovo\.one\/buy\/zovo-pro\?client_reference_id=[0-9a-f-]{36}$/);
+  await f.log.commands['hexViewer.payByCard']();
+  assert.equal(f.log.opened[1], f.log.opened[0], 'same install id on every click');
+  assert.equal(f.global.size, 1); // only the random install id is stored
+  // the other buttons
+  const s = panelOf({}, 'Get Zovo Pro with GitHub Sponsors');
+  await mk(s, { cardBuyUrl: CARD }).requirePro('Checksums');
+  assert.deepEqual(s.log.opened, ['https://github.com/sponsors/theluckystrike/sponsorships?tier_id=679878']);
+  const pp = panelOf({}, 'Pay with PayPal');
+  await mk(pp, { cardBuyUrl: CARD }).requirePro('Checksums');
+  assert.equal(pp.log.info.at(-1), 'Pay for Zovo Pro with PayPal'); // the PayPal steps modal
+  // a Stripe Payment Link straight in card_buy_url works too
+  const sl = fakeVscode();
+  await mk(sl, { cardBuyUrl: 'https://buy.stripe.com/test_eVq3cw2oagsgeklaYZ43S0Q' }).payByCard();
+  assert.match(sl.log.opened[0], /^https:\/\/buy\.stripe\.com\/test_eVq3cw2oagsgeklaYZ43S0Q\?client_reference_id=/);
+});
+
+test('CARD1 Enter a key: a ZOVO1 key on the clipboard turns Pro on at once (offline), read only after the click', async () => {
+  const key = sign({ ...base, sku: 'zovo-pro' });
+  const box = {};
+  const f = withClipboard(panelOf(box, 'Enter a key'), `  ${key}\n`);
+  const pro = mk(f, { cardBuyUrl: CARD, commandPrefix: 'hexViewer' });
+  await pro.ready;
+  assert.equal(f.log.clipReads || 0, 0, 'no clipboard read at activation');
+  assert.equal(pro.isPro('hex-pro'), false);
+  assert.equal(await pro.requirePro('Checksums'), true);
+  assert.equal(f.log.clipReads, 1);
+  assert.equal(f.log.input.length, 0, 'no input box: the key was valid');
+  assert.equal(pro.isPro('hex-pro'), true);
+  assert.equal(pro.isPro('docx-pro'), true);
+  assert.equal(f.secrets.get(lic.SECRET_KEY), key);
+  assert.match(f.log.info.at(-1), /^Zovo Pro is on\. Thank you/);
+  assert.equal(f.log.opened.length, 0);
+});
+
+test('CARD1 Enter a key: damaged key on the clipboard opens the input box with it; no key there opens the pick, key first', async () => {
+  const key = sign({ ...base, sku: 'zovo-pro' });
+  const bad = key.slice(0, -4) + 'AAAA';
+  const f = withClipboard(fakeVscode({ input: key }), bad);
+  const pro = mk(f, { cardBuyUrl: CARD });
+  await pro.ready;
+  const r = await pro.enterKey();
+  assert.equal(f.log.input[0].value, bad);
+  assert.equal(r.pro, true);
+  // clipboard holds something else: the quick pick, the license key first, then Sponsors and PayPal without a key
+  const g = withClipboard(fakeVscode({ pick: 'Enter a license key', input: key }), 'some text the user copied');
+  const p2 = mk(g, { cardBuyUrl: CARD });
+  await p2.ready;
+  assert.equal((await p2.enterKey()).pro, true);
+  assert.deepEqual(g.log.picks[0], ['Enter a license key', 'Unlock with GitHub Sponsors', 'I paid with PayPal and have no key yet']);
+  assert.equal(g.log.input[0].value, '', 'other clipboard text is never put in the box');
+  // no clipboard API (old or web editor): the pick
+  const h = fakeVscode({ pick: undefined });
+  const p3 = mk(h, { cardBuyUrl: CARD });
+  await p3.ready;
+  assert.equal((await p3.enterKey()).pro, false);
+  assert.equal(h.log.picks.length, 1);
+});
+
+test('CARD1 back from the card checkout: one message, "Enter a key" runs the key path; silent when Pro already', async () => {
+  const key = sign({ ...base, sku: 'zovo-pro' });
+  const f = withClipboard(fakeVscode({ info: (msg) => (msg.startsWith('Back from the checkout?') ? 'Enter a key' : undefined) }), key);
+  const pro = mk(f, { cardBuyUrl: CARD });
+  await pro.ready;
+  await pro.payByCard();
+  assert.equal(f.log.clipReads || 0, 0);
+  f.log.win({ focused: false }); f.log.win({ focused: true }); await tick(); await tick(); await tick();
+  assert.match(f.log.info[0], /^Back from the checkout\? Click "Copy key" on the license page, then "Enter a key" here/);
+  assert.equal(pro.isPro('hex-pro'), true);
+  f.log.win({ focused: false }); f.log.win({ focused: true }); await tick();
+  assert.equal(f.log.info.filter((m) => m.startsWith('Back from')).length, 1, 'never twice');
+});
+
+test('CARD1 free path: no network, no clipboard read, no message on activation with the card rail on', async () => {
+  const f = withClipboard(fakeVscode(), 'ZOVO1.x.y');
+  const pro = mk(f, { cardBuyUrl: CARD, commandPrefix: 'hexViewer' });
+  await pro.ready;
+  f.log.win && f.log.win({ focused: false }); f.log.win && f.log.win({ focused: true }); await tick();
+  assert.equal(f.log.info.length + f.log.warn.length + f.log.opened.length + (f.log.clipReads || 0), 0);
+  assert.equal(pro.isPro('hex-pro'), false);
+});
+
+test('CARD1 the Worker key (Stripe test mode) passes the same check the extension runs', async () => {
+  // A key from license-test.zovo.one is signed with the TEST pair: valid only with that public key and allowTest.
+  const file = path.join(__dirname, '..', '..', 'pay', 'public-key-test.txt');
+  if (!fs.existsSync(file)) return; // inside an extension repo: the factory file is not there
+  const TESTPUB = fs.readFileSync(file, 'utf8').trim();
+  assert.notEqual(TESTPUB, lic.PUBLIC_KEY_SPKI_B64, 'test and live pairs differ');
 });

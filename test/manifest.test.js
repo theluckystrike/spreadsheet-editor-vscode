@@ -52,7 +52,7 @@ test('no network in the shipped code: no http, https, net or fetch outside the l
     assert.ok(!/\bfetch\(|XMLHttpRequest|WebSocket\(/.test(s), f);
   }
   assert.ok(!fs.existsSync(path.join(root, 'src', 'config.js')), 'no Pro switch: Pro is on in this build');
-  assert.match(read('src/license/index.js'), /MODULE_VERSION = '2026-11-10\.exec14'/);
+  assert.match(read('src/license/index.js'), /MODULE_VERSION = '2026-11-10\.card1'/);
 });
 
 test('free limits are exactly the setting defaults (512 MB edit, 1024 MB open, 40 MB workbook); Pro raises them', () => {

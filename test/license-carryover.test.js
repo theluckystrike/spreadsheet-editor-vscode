@@ -12,7 +12,10 @@ const path = require('path');
 const dir = fs.existsSync(path.join(__dirname, '..', 'index.js')) ? path.join(__dirname, '..') : path.join(__dirname, '..', 'src', 'license');
 const lic = require(path.join(dir, 'license.js'));
 const idx = require(path.join(dir, 'index.js'));
-const { createLicense, zovoTools, namesList, readSharedFile, writeSharedFile, paletteCommands } = idx;
+const { zovoTools, namesList, readSharedFile, writeSharedFile, paletteCommands } = idx;
+// The EXEC14 tests below pin the panel without the card rail, whatever the build's config.js says (CARD1 tests pass
+// cardBuyUrl themselves).
+const createLicense = (o) => idx.createLicense({ cardBuyUrl: '', ...o });
 
 const { privateKey, publicKey } = crypto.generateKeyPairSync('ed25519');
 const PUB = publicKey.export({ format: 'der', type: 'spki' }).toString('base64');

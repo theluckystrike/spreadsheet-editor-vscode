@@ -98,7 +98,7 @@ Zovo Pro is USD 19 once. It turns on the Pro tools in all Zovo extensions. In th
 - Edit files past the free size limits: CSV files over 512 MB open for editing (up to 2,000 MB), and workbooks over 40 MB open (up to 200 MB). Without Pro such a file opens read-only or not at all, as before, and the note has a button to open it with Pro.
 - Save filtered rows as a new file: the rows that the filter or SQL condition shows, in their sorted order, go to a new CSV, TSV or XLSX file that you pick. The open file is not changed.
 
-Each Pro tool has 3 free tries on this computer. A try is used only when the tool did its work (a replacement written, a large file opened, a new file saved). Cancel or Escape never uses one. Nothing about Pro shows until you click a Pro tool. To buy or unlock, run a "Zovo Pro" command from the Command Palette: Get Zovo Pro, Pay with PayPal, or I already paid.
+Each Pro tool has 3 free tries on this computer. A try is used only when the tool did its work (a replacement written, a large file opened, a new file saved). Cancel or Escape never uses one. Nothing about Pro shows until you click a Pro tool. The Pro panel offers "Pay by card (USD 19)" first (the key shows on the page right after payment), then GitHub Sponsors, PayPal and "Enter a key". The same ways are in the Command Palette under "Zovo Pro".
 
 ## Support Zovo
 

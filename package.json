@@ -168,6 +168,11 @@
         "command": "spreadsheetEditor.payWithPayPal",
         "title": "Pay for Zovo Pro with PayPal (USD 19, team of 5 USD 59)",
         "category": "Zovo Pro"
+      },
+      {
+        "command": "spreadsheetEditor.payByCard",
+        "title": "Pay for Zovo Pro by card (USD 19)",
+        "category": "Zovo Pro"
       }
     ],
     "keybindings": [

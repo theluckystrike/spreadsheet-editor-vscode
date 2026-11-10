@@ -21,8 +21,8 @@
 //   <prefix>.unlockWithSponsors  "I already paid: unlock with GitHub Sponsors"
 //   <prefix>.enterLicenseKey     "Enter Zovo Pro license key"
 //   <prefix>.removeLicense       "Remove Zovo Pro from this editor"
-//   <prefix>.payByCard           only when funding.json gumroad_pro and gumroad_pro_url are set (palette.js then
-//                                adds "Pay for Zovo Pro by card (USD 19)" to package.json)
+//   <prefix>.payByCard           only when funding.json card_buy_url is set, or gumroad_pro and gumroad_pro_url
+//                                (palette.js then adds "Pay for Zovo Pro by card (USD 19)" to package.json)
 //
 // History: CONV2 (9 Nov) back-from-browser message and PayPal steps. EXEC7 (9 Nov, owner decision 22:16) GitHub
 // Sponsors first, PayPal second.
@@ -40,6 +40,16 @@
 //   zovo.* extensions.
 // - Gumroad (card checkout): the rail, the "Pay by card" button and the Gumroad key link exist only when
 //   funding.json gumroad_pro is set. Empty today: no button and no request to Gumroad.
+//
+// CARD1 (10 Nov, card checkout without a GitHub account, CONV3: 4 of 6 paid rivals take a card in 1-3 clicks):
+// - funding.json card_buy_url (https://license.zovo.one/buy/zovo-pro) turns on the Stripe card rail. The panel is then
+//   [Pay by card (USD 19)] [Get Zovo Pro with GitHub Sponsors] [Pay with PayPal] [Enter a key] [Cancel].
+//   "Pay by card" opens card_buy_url?client_reference_id=<random install id>. The Worker sends the buyer to the Stripe
+//   Payment Link, and after paying the license page shows a ZOVO1 key with a Copy button (or, before the owner
+//   switches Stripe live, a page with GitHub Sponsors and PayPal).
+// - "Enter a key": after that click only, the clipboard is read once (local); a ZOVO1 key there is checked offline and
+//   turns Pro on. Otherwise a quick pick: paste a key, unlock with GitHub Sponsors, or PayPal without a key yet.
+// - card_buy_url empty: everything as in EXEC14. Gumroad stays as it is (hidden while gumroad_pro is empty).
 
 const crypto = require('crypto');
 const fs = require('fs');
@@ -56,13 +66,18 @@ const PRICE = { one: 19, team: 59, seats: 5 };
 // The public issue form where a PayPal buyer sends the transaction id (owner watches it; the key goes by email).
 const KEY_REQUEST_URL = 'https://github.com/theluckystrike/zovo-plugin-factory/issues/new?template=zovo-pro-key.yml';
 const RETURN_MS = 2 * 60 * 60 * 1000;
-const MODULE_VERSION = '2026-11-10.exec14';
+const MODULE_VERSION = '2026-11-10.card1';
 const BRAND = 'Zovo Pro';
 // Zovo VS Code listings with Pro tools (F, XSELL2 gallery read 2026-11-10 05:46). config.js pro_extensions overrides.
 const PRO_EXTENSIONS = 22;
 const CATEGORY = 'Zovo Pro';
 const BUY_LABEL = `Get Zovo Pro, USD ${PRICE.one}`;
 const CARD_LABEL = 'Pay by card';
+// CARD1: the Stripe card rail (funding.json card_buy_url). Only our license Worker or a Stripe Payment Link.
+const CARD_BUY_LABEL = `Pay by card (USD ${PRICE.one})`;
+const SPONSORS_BUY_LABEL = 'Get Zovo Pro with GitHub Sponsors';
+const ENTER_KEY_LABEL = 'Enter a key';
+const CARD_BUY_RE = /^https:\/\/(license(-test)?\.zovo\.one\/buy\/[a-z0-9][a-z0-9-]{1,40}|buy\.stripe\.com\/[A-Za-z0-9_]{4,80})$/;
 const PAYPAL_LABEL = 'Pay with PayPal';
 const PAID_LABEL = 'I already paid';
 const LABELS = {
@@ -279,6 +294,7 @@ function createSharedRail(o) {
 //   paypalUrl      PayPal.me base link (default PAYPAL_ME). '' = no PayPal option
 //   keyRequestUrl  where a PayPal buyer sends the transaction id (default KEY_REQUEST_URL)
 //   refundDays, gumroadPro, gumroadUrl, proExtensions   override config.js (funding.json) for tests
+//   cardBuyUrl     override config.js card_buy_url ('' = no Stripe card rail)
 //   sharedFile     path of the shared file ('' = off). Default ~/.zovo/pro.json (env ZOVO_PRO_FILE overrides).
 //                  Off under `node --test` and without context.extension unless set, so product unit tests never
 //                  touch the real home folder.
@@ -291,6 +307,8 @@ function createLicense(o) {
   const refundDays = pick1(o.refundDays, 'refund_days');
   const gumroadPro = pick1(o.gumroadPro, 'gumroad_pro');
   const gumroadUrl = pick1(o.gumroadUrl, 'gumroad_pro_url');
+  const cardBuyRaw = pick1(o.cardBuyUrl, 'card_buy_url');
+  const cardBuyUrl = CARD_BUY_RE.test(cardBuyRaw) ? cardBuyRaw : '';
   const proCount = Number(pick1(o.proExtensions, 'pro_extensions')) || PRO_EXTENSIONS;
   const name = o.name || 'Zovo';
   const label = BRAND;
@@ -324,16 +342,25 @@ function createLicense(o) {
   const listeners = new Set();
   let last = null;
 
-  // EXEC7 order of the unlock ways: GitHub Sponsors, the license key, Gumroad, other rails.
-  const RAIL_ORDER = ['github-sponsors', 'license-key', 'gumroad'];
+  // EXEC7 order of the unlock ways: GitHub Sponsors, the license key, Gumroad, other rails. CARD1: with the card rail
+  // on, the license key comes first (the card buyer has a key from the license page).
+  const RAIL_ORDER = cardBuyUrl ? ['license-key', 'github-sponsors', 'gumroad'] : ['github-sponsors', 'license-key', 'gumroad'];
   const railRank = (r) => { const i = RAIL_ORDER.indexOf(r.id); return i < 0 ? RAIL_ORDER.length : i; };
   const CORE = ['github-sponsors', 'license-key', 'gumroad'];
   const railLabel = (r) => (CORE.includes(r.id) ? LABELS[r.id] : r.label || LABELS[r.id] || r.id);
   const sortedRails = () => visible().map((r, i) => ({ r, i })).sort((a, b) => railRank(a.r) - railRank(b.r) || a.i - b.i).map((x) => x.r);
   // The panel buttons in the one Zovo order (EXEC14): Get Zovo Pro, USD 19 / Pay by card (only with Gumroad) /
   // Pay with PayPal / I already paid. VS Code adds Cancel.
+  // CARD1, with card_buy_url: Pay by card (USD 19) / Get Zovo Pro with GitHub Sponsors / Pay with PayPal / Enter a key.
   function buttons() {
     const out = [];
+    if (cardBuyUrl) {
+      out.push(CARD_BUY_LABEL);
+      if (paymentUrl) out.push(onSponsors() ? SPONSORS_BUY_LABEL : BUY_LABEL);
+      if (paypalUrl) out.push(PAYPAL_LABEL);
+      out.push(ENTER_KEY_LABEL);
+      return out;
+    }
     if (paymentUrl) out.push(BUY_LABEL);
     if (cardUrl) out.push(CARD_LABEL);
     if (paypalUrl) out.push(PAYPAL_LABEL);
@@ -375,8 +402,14 @@ function createLicense(o) {
     return openArmed(paymentUrl, onSponsors() && sponsorsRail() ? 'sponsors' : '');
   }
 
-  // Card checkout on Gumroad (MONEY5 #1). Only when funding.json gumroad_pro and gumroad_pro_url are set.
+  // Card checkout. CARD1: Stripe through the license Worker when funding.json card_buy_url is set (a random install id
+  // goes along as client_reference_id; no other data). Else Gumroad (MONEY5 #1) when gumroad_pro and _url are set.
   async function payByCard() {
+    if (cardBuyUrl) {
+      const sep = cardBuyUrl.includes('?') ? '&' : '?';
+      await openArmed(`${cardBuyUrl}${sep}client_reference_id=${encodeURIComponent(installId())}`, 'card');
+      return false;
+    }
     if (!cardUrl) {
       await info(`${label} is not sold by card in this version. ${PAYPAL_LABEL} or GitHub Sponsors work today.`);
       return false;
@@ -428,6 +461,9 @@ function createLicense(o) {
       const pick = await info(`Back from PayPal? Send the transaction ID from your PayPal receipt. The ${label} license key then comes to the email address of your PayPal account.`, send, key);
       if (pick === send) await sendTransactionId();
       else if (pick === key) await unlock('license-key');
+    } else if (kind === 'card' && byId('license-key')) {
+      const pick = await info(`Back from the checkout? Click "Copy key" on the license page, then "${ENTER_KEY_LABEL}" here to turn ${label} on.`, ENTER_KEY_LABEL, 'Not yet');
+      if (pick === ENTER_KEY_LABEL) await enterKey();
     } else if (kind === 'gumroad' && byId('gumroad')) {
       const g = LABELS.gumroad;
       const pick = await info(`Back from Gumroad? Paste the license key from your receipt to turn ${label} on.`, g, 'Not yet');
@@ -483,12 +519,29 @@ function createLicense(o) {
 
   // "I already paid": the ways to turn Pro on after paying. The old "How to buy" text lives here now.
   async function alreadyPaid() {
-    const items = sortedRails().map((r) => ({ label: railLabel(r), description: PAID_DESC[r.id] || '', id: r.id }));
+    const desc = (id) => (cardBuyUrl && id === 'license-key' ? 'a key that starts with ZOVO1., from the license page after paying by card, or the PayPal email' : PAID_DESC[id] || '');
+    const items = sortedRails().map((r) => ({ label: railLabel(r), description: desc(r.id), id: r.id }));
     if (paypalUrl && keyRequestUrl) items.push({ label: NO_KEY_LABEL, description: 'send the transaction ID; the key comes by email', id: 'paypal-no-key' });
-    const pick = await vscode.window.showQuickPick(items, { title: `${PAID_LABEL}: turn ${label} on`, placeHolder: 'How did you pay?' });
+    const title = cardBuyUrl ? `${ENTER_KEY_LABEL}: turn ${label} on` : `${PAID_LABEL}: turn ${label} on`;
+    const pick = await vscode.window.showQuickPick(items, { title, placeHolder: 'How did you pay?' });
     if (!pick) return none();
     if (pick.id === 'paypal-no-key') { await sendTransactionId(); return none(); }
     return unlock(pick.id);
+  }
+
+  // CARD1 "Enter a key": the user clicked it, so the clipboard is read once (local, never sent anywhere). A ZOVO1 key
+  // there goes to the key rail: a valid key turns Pro on at once, any other ZOVO1 text opens the input box with it.
+  // No ZOVO1 key on the clipboard: the quick pick (paste a key, GitHub Sponsors, PayPal without a key yet).
+  async function enterKey() {
+    let clip = '';
+    try {
+      const c = vscode.env && vscode.env.clipboard;
+      if (c && typeof c.readText === 'function') clip = String((await c.readText()) || '').trim();
+    } catch (e) { clip = ''; }
+    if (clip.length < 4096 && clip.replace(/^["'\s]+/, '').startsWith(KEY_PREFIX) && byId('license-key')) {
+      return unlock('license-key', { prefill: clip });
+    }
+    return alreadyPaid();
   }
 
   // ---- after a successful unlock: the shared file, then one carry-over offer (XSELL2 move 1) ----
@@ -561,7 +614,7 @@ function createLicense(o) {
     let rail = railId ? byId(railId) : null;
     if (!rail && !railId && visible().length === 1) rail = visible()[0];
     if (!rail) return railId ? none() : alreadyPaid();
-    const r = await rail.unlock();
+    const r = await (rail.id === 'license-key' && typeof opts.prefill === 'string' ? rail.unlock(opts.prefill) : rail.unlock());
     if (r && r.pro && r.reason === 'ok') {
       changed();
       const shared = await share(rail);
@@ -626,8 +679,9 @@ function createLicense(o) {
     if (renew) btns.push('Renew page');
     const pick = await info(`${feature} is part of ${label}.`, { modal: true, detail: panelDetail(feature, detail) }, ...btns);
     if (!pick) return false;
-    if (pick === BUY_LABEL) { await getPro(); return false; }
-    if (pick === CARD_LABEL) { await payByCard(); return false; }
+    if (pick === BUY_LABEL || pick === SPONSORS_BUY_LABEL) { await getPro(); return false; }
+    if (pick === CARD_LABEL || pick === CARD_BUY_LABEL) { await payByCard(); return false; }
+    if (pick === ENTER_KEY_LABEL) return !!(await enterKey()).pro && isPro();
     if (pick === PAYPAL_LABEL) return payWithPayPal();
     if (pick === 'Renew page') { await open(renew); return false; }
     if (pick === PAID_LABEL) return !!(await alreadyPaid()).pro && isPro();
@@ -680,7 +734,7 @@ function createLicense(o) {
     ];
     if (byId('github-sponsors')) d.push(vscode.commands.registerCommand(`${p}.unlockWithSponsors`, async (arg) => (arg && arg.carryOver ? carryIn('sponsors') : outward(await unlock('github-sponsors')))));
     if (paypalUrl) d.push(vscode.commands.registerCommand(`${p}.payWithPayPal`, () => payWithPayPal()));
-    if (cardUrl) d.push(vscode.commands.registerCommand(`${p}.payByCard`, () => payByCard()));
+    if (cardBuyUrl || cardUrl) d.push(vscode.commands.registerCommand(`${p}.payByCard`, () => payByCard()));
     context.subscriptions.push(...d);
     return d;
   }
@@ -693,6 +747,7 @@ function createLicense(o) {
     alreadyPaid,
     getPro,
     payByCard,
+    enterKey,
     payWithPayPal,
     sendTransactionId,
     requirePro,
@@ -703,6 +758,7 @@ function createLicense(o) {
     registerCommands,
     supportDeveloper,
     installId,
+    cardBuyUrl,
     sharedFile: file,
     refresh: () => Promise.all(rails.map((r) => (typeof r.refresh === 'function' ? r.refresh().catch(() => false) : false))),
     state: () => Object.fromEntries(rails.map((r) => [r.id, typeof r.state === 'function' ? r.state() : null])),
@@ -716,4 +772,5 @@ module.exports = {
   createLicense, createSharedRail, zovoTools, namesList, paletteCommands, readSharedFile, writeSharedFile, sharedFilePath,
   SPONSORS_ONE_TIME, PAYPAL_ME, PRICE, KEY_REQUEST_URL, MODULE_VERSION, CATEGORY, PRO_EXTENSIONS, SUPPORT_PRO_LABEL,
   BUY_LABEL, CARD_LABEL, PAYPAL_LABEL, PAID_LABEL, LABELS, CARRY_KEY, SHARED_ENV,
+  CARD_BUY_LABEL, SPONSORS_BUY_LABEL, ENTER_KEY_LABEL, CARD_BUY_RE,
 };

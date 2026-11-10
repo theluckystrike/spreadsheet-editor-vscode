@@ -4,7 +4,7 @@
 
 First release.
 
-- Zovo Pro (USD 19 once, all Zovo extensions) adds three tools: Find and Replace in CSV Files, editing files past the free size limits, and Save Filtered Rows as a New File. Each has 3 free tries on this computer. Everything else is free and stays free, and the free size limits are the setting defaults.
+- Zovo Pro (USD 19 once, all Zovo extensions) adds three tools: Find and Replace in CSV Files, editing files past the free size limits, and Save Filtered Rows as a New File. Each has 3 free tries on this computer. Everything else is free and stays free, and the free size limits are the setting defaults. Pay by card (USD 19), GitHub Sponsors or PayPal.
 - Edit CSV, TSV and Excel (.xlsx) files as a spreadsheet: cells, rows, columns, moves, paste from Excel or Google Sheets, fill down, clear.
 - VS Code's own undo, redo, save, save as, revert and hot exit. The tab shows unsaved changes. A file changed on disk while you edit is never overwritten without asking.
 - CSV saves copy every untouched row byte for byte and keep the delimiter, quoting, encoding, BOM and line endings.
