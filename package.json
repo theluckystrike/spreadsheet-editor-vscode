@@ -235,19 +235,19 @@
           "type": "number",
           "default": 512,
           "minimum": 1,
-          "description": "CSV and TSV files up to this size open for editing. Larger ones (up to spreadsheetEditor.maxFileSizeMB) open read-only."
+          "description": "CSV and TSV files up to this size open for editing. Larger ones (up to spreadsheetEditor.maxFileSizeMB) open read-only. Free up to 512 MB. With Zovo Pro up to 2,000 MB."
         },
         "spreadsheetEditor.maxFileSizeMB": {
           "type": "number",
           "default": 1024,
           "minimum": 1,
-          "description": "CSV and TSV files above this size are not opened here; open them as text instead."
+          "description": "CSV and TSV files above this size are not opened here; open them as text instead. Free up to 1,024 MB. With Zovo Pro up to 2,000 MB."
         },
         "spreadsheetEditor.maxExcelSizeMB": {
           "type": "number",
           "default": 40,
           "minimum": 1,
-          "description": "Excel workbooks (.xlsx, .xlsm) up to this size open for editing."
+          "description": "Excel workbooks (.xlsx, .xlsm) up to this size open for editing. Free up to 40 MB. With Zovo Pro up to 200 MB."
         },
         "spreadsheetEditor.maxExcelCells": {
           "type": "number",
